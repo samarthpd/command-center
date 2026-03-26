@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Finals War Room</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #f5f3ef;
+    --surface: #ffffff;
+    --surface2: #f0ede8;
+    --border: rgba(0,0,0,0.07);
+    --border2: rgba(0,0,0,0.13);
+    --text: #1a1916;
+    --muted: #8a8680;
+    --faint: #e4e1db;
+    --red: #c0392b;
+    --red-bg: rgba(192,57,43,0.08);
+    --amber: #b5620a;
+    --amber-bg: rgba(181,98,10,0.08);
+    --blue: #1a5fa8;
+    --blue-bg: rgba(26,95,168,0.08);
+    --mono: 'DM Mono', monospace;
+    --sans: 'DM Sans', sans-serif;
+  }
+
+  html { background: var(--bg); color: var(--text); font-family: var(--sans); font-size: 14px; line-height: 1.6; }
+  body { max-width: 780px; margin: 0 auto; padding: 3rem 2rem 5rem; }
+
+  .top { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 3rem; border-bottom: 0.5px solid var(--border); padding-bottom: 1.5rem; }
+  .wordmark { font-family: var(--mono); font-size: 11px; letter-spacing: 0.12em; color: var(--muted); text-transform: uppercase; }
+  .datestamp { font-family: var(--mono); font-size: 11px; color: var(--muted); }
+
+  h1 { font-family: var(--mono); font-size: 22px; font-weight: 500; color: var(--text); margin-bottom: 0.25rem; }
+  .subtitle { font-size: 13px; color: var(--muted); margin-bottom: 2.5rem; }
+
+  .summary-row { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1px; background: var(--border); border: 0.5px solid var(--border); border-radius: 10px; overflow: hidden; margin-bottom: 2.5rem; }
+  .summary-cell { background: var(--surface); padding: 1rem 1.25rem; }
+  .summary-cell .lbl { font-size: 10px; font-family: var(--mono); color: var(--muted); letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 4px; }
+  .summary-cell .val { font-family: var(--mono); font-size: 20px; font-weight: 500; }
+  .circles-cell { background: var(--surface); padding: 1rem 1.25rem; grid-column: 1 / -1; border-top: 1px solid var(--border); }
+  .circles-cell .lbl { font-size: 10px; font-family: var(--mono); color: var(--muted); letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 1rem; }
+  .circles-row { display: flex; gap: 2rem; align-items: center; flex-wrap: wrap; }
+  .circle-item { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+  .circle-name { font-family: var(--mono); font-size: 10px; color: var(--muted); }
+
+  .exam-card { background: var(--surface); border: 0.5px solid var(--border); border-radius: 12px; margin-bottom: 1.25rem; transition: border-color 0.2s; }
+  .exam-card:hover { border-color: var(--border2); }
+
+  .card-top { padding: 1.25rem 1.5rem; display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; }
+  .card-left { flex: 1; }
+  .exam-name { font-size: 15px; font-weight: 500; color: var(--text); margin-bottom: 3px; }
+  .exam-type { font-family: var(--mono); font-size: 11px; color: var(--muted); }
+  .card-right { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; }
+  .countdown { font-family: var(--mono); font-size: 11px; padding: 3px 10px; border-radius: 20px; font-weight: 500; }
+  .c-red { background: var(--red-bg); color: var(--red); }
+  .c-amber { background: var(--amber-bg); color: var(--amber); }
+  .c-blue { background: var(--blue-bg); color: var(--blue); }
+  .progress-track { height: 2px; background: var(--faint); border-radius: 1px; overflow: hidden; width: 80px; }
+  .progress-fill { height: 100%; border-radius: 1px; transition: width 0.4s; }
+  .pf-red { background: var(--red); }
+  .pf-amber { background: var(--amber); }
+  .pf-blue { background: var(--blue); }
+  .progress-label { font-family: var(--mono); font-size: 10px; color: var(--muted); }
+
+  .milestones { border-top: 0.5px solid var(--border); border-radius: 0 0 12px 12px; overflow: hidden; }
+
+  /* Normal row */
+  .ms-row { display: flex; align-items: center; gap: 10px; padding: 0.6rem 1.5rem; border-bottom: 0.5px solid var(--border); transition: background 0.12s; position: relative; }
+  .ms-row:last-child { border-bottom: none; }
+  .ms-row:hover { background: var(--surface2); }
+  .ms-row:hover .m-actions { opacity: 1; }
+
+  .cb { width: 15px; height: 15px; border: 1px solid var(--border2); border-radius: 3px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.15s; }
+  .cb.done { border-color: transparent; }
+  .cb-red.done { background: var(--red); }
+  .cb-amber.done { background: var(--amber); }
+  .cb-blue.done { background: var(--blue); }
+  .ck { display: none; width: 8px; height: 5px; border-left: 1.5px solid #fff; border-bottom: 1.5px solid #fff; transform: rotate(-45deg) translateY(-1px); }
+  .cb.done .ck { display: block; }
+
+  .m-body { flex: 1; min-width: 0; }
+  .m-text { font-size: 13px; color: var(--text); }
+  .m-text.done { color: var(--muted); text-decoration: line-through; text-decoration-color: var(--faint); }
+  .m-date { font-family: var(--mono); font-size: 10px; color: var(--muted); }
+  .m-date.hot { color: var(--red); font-weight: 500; }
+
+  .m-actions { opacity: 0; display: flex; gap: 4px; transition: opacity 0.15s; }
+  .act { background: none; border: 0.5px solid var(--border2); border-radius: 5px; padding: 2px 8px; font-family: var(--mono); font-size: 10px; color: var(--muted); cursor: pointer; transition: all 0.12s; }
+  .act:hover { color: var(--text); background: var(--faint); }
+  .act.del:hover { color: var(--red); border-color: var(--red); background: var(--red-bg); }
+
+  /* Edit row */
+  .edit-row { display: flex; align-items: center; gap: 8px; padding: 0.5rem 1.5rem; background: #eef3fa; border-bottom: 0.5px solid var(--border); flex-wrap: wrap; }
+  .edit-row input[type="text"] { flex: 1; min-width: 120px; background: #fff; border: 0.5px solid #a8c4e8; border-radius: 6px; padding: 5px 9px; font-family: var(--sans); font-size: 13px; color: var(--text); outline: none; }
+  .edit-row input[type="text"]:focus { border-color: var(--blue); box-shadow: 0 0 0 2px rgba(26,95,168,0.12); }
+  .edit-row input[type="date"] { background: #fff; border: 0.5px solid #a8c4e8; border-radius: 6px; padding: 5px 8px; font-family: var(--mono); font-size: 11px; color: var(--text); outline: none; }
+  .edit-row input[type="date"]:focus { border-color: var(--blue); }
+  .btn-save { background: var(--blue); border: none; border-radius: 6px; padding: 5px 14px; font-family: var(--mono); font-size: 10px; color: #fff; cursor: pointer; letter-spacing: 0.04em; }
+  .btn-save:hover { opacity: 0.85; }
+  .btn-cancel { background: none; border: 0.5px solid var(--border2); border-radius: 6px; padding: 5px 10px; font-family: var(--mono); font-size: 10px; color: var(--muted); cursor: pointer; }
+  .btn-cancel:hover { color: var(--text); }
+
+  /* Add row */
+  .add-row { display: flex; align-items: center; gap: 8px; padding: 0.6rem 1.5rem; border-top: 0.5px solid var(--border); flex-wrap: wrap; }
+  .add-row input[type="text"] { flex: 1; min-width: 120px; background: var(--bg); border: 0.5px solid var(--border2); border-radius: 6px; padding: 5px 9px; font-family: var(--sans); font-size: 13px; color: var(--text); outline: none; }
+  .add-row input[type="text"]::placeholder { color: var(--muted); }
+  .add-row input[type="text"]:focus { border-color: var(--blue); background: #fff; }
+  .add-row input[type="date"] { background: var(--bg); border: 0.5px solid var(--border2); border-radius: 6px; padding: 5px 8px; font-family: var(--mono); font-size: 11px; color: var(--text); outline: none; }
+  .add-row input[type="date"]:focus { border-color: var(--blue); background: #fff; }
+  .btn-add { background: none; border: 0.5px solid var(--border2); border-radius: 6px; padding: 5px 14px; font-family: var(--mono); font-size: 10px; color: var(--muted); cursor: pointer; white-space: nowrap; }
+  .btn-add:hover { color: var(--blue); border-color: var(--blue); }
+</style>
+</head>
+<body>
+
+<div class="top">
+  <span class="wordmark">Finals War Room</span>
+  <span class="datestamp" id="today-label"></span>
+</div>
+
+<h1>Spring 2026</h1>
+<p class="subtitle" id="next-up"></p>
+
+<div class="summary-row">
+  <div class="summary-cell">
+    <div class="lbl">Exams</div>
+    <div class="val">3</div>
+  </div>
+  <div class="summary-cell">
+    <div class="lbl">Next deadline</div>
+    <div class="val" id="s-next" style="font-size:14px;padding-top:3px;"></div>
+  </div>
+  <div class="circles-cell">
+    <div class="lbl">Progress by exam</div>
+    <div class="circles-row" id="circles-row"></div>
+  </div>
+</div>
+
+<div id="cards"></div>
+
+<script>
+const TODAY = new Date(); TODAY.setHours(0,0,0,0);
+document.getElementById('today-label').textContent = TODAY.toLocaleDateString('en-US',{weekday:'short',month:'long',day:'numeric',year:'numeric'});
+
+const DEFAULTS = [
+  {
+    id:'mpre', name:'MPRE', meta:'Exam · March 24, 2026', date:'2026-03-24', color:'red',
+    milestones:[
+      {label:'Review Themis outline — modules 1–5', due:'2026-03-18'},
+      {label:'Review Themis outline — modules 6–10', due:'2026-03-20'},
+      {label:'Complete 2 full practice exams', due:'2026-03-22'},
+      {label:'Light review + rest day', due:'2026-03-23'},
+    ]
+  },
+  {
+    id:'property', name:'Property', meta:'Exam · April 30, 2026', date:'2026-04-30', color:'amber',
+    milestones:[
+      ...Array.from({length:25},(_,i)=>({label:`Class ${i+1}`, due:'2026-04-11'})),
+      {label:'Practice Exam 1', due:'2026-04-29'},
+      {label:'Practice Exam 2', due:'2026-04-29'},
+      {label:'Practice Exam 3', due:'2026-04-29'},
+    ]
+  },
+  {
+    id:'tax', name:'Tax', meta:'Exam · May 5, 2026', date:'2026-05-05', color:'blue',
+    milestones:[
+      ...Array.from({length:25},(_,i)=>({label:`Class ${i+1}`, due:'2026-04-11'})),
+      ...Array.from({length:10},(_,i)=>({label:`Practice Exam ${i+1}`, due:'2026-05-04'})),
+    ]
+  }
+];
+
+const SK = 'fwr_v3';
+let S = {exams: null, checked: {}};
+try {
+  const raw = localStorage.getItem(SK);
+  if (raw) S = JSON.parse(raw);
+  if (!S.exams) S.exams = JSON.parse(JSON.stringify(DEFAULTS));
+  if (!S.checked) S.checked = {};
+} catch(e) { S = {exams: JSON.parse(JSON.stringify(DEFAULTS)), checked:{}}; }
+
+let editing = null; // {examId, idx}
+
+function persist() { try { localStorage.setItem(SK, JSON.stringify(S)); } catch(e){} }
+function daysTo(ds) { const d=new Date(ds); d.setHours(0,0,0,0); return Math.round((d-TODAY)/86400000); }
+function fmtDate(ds) { return new Date(ds).toLocaleDateString('en-US',{month:'short',day:'numeric'}); }
+function ctClass(d, color) {
+  if (d<0) return 'c-'+color;
+  if (d<=1) return 'c-red';
+  if (d<=7) return 'c-red';
+  if (d<=21) return 'c-amber';
+  return 'c-'+color;
+}
+function ctText(d) {
+  if (d<0) return 'Past';
+  if (d===0) return 'Today';
+  if (d===1) return 'Tomorrow';
+  return d+' days';
+}
+
+function circle(exam, pct) {
+  const r=28,cx=34,cy=34,sw=5;
+  const circ=2*Math.PI*r, dash=(pct/100)*circ;
+  const cols={red:'var(--red)',amber:'var(--amber)',blue:'var(--blue)'};
+  const c=cols[exam.color]||'var(--blue)';
+  return `<div class="circle-item">
+    <svg width="68" height="68" viewBox="0 0 68 68">
+      <circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="var(--faint)" stroke-width="${sw}"/>
+      <circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${c}" stroke-width="${sw}"
+        stroke-dasharray="${dash.toFixed(1)} ${circ.toFixed(1)}" stroke-linecap="round"
+        transform="rotate(-90 ${cx} ${cy})"/>
+      <text x="${cx}" y="${cy+1}" text-anchor="middle" dominant-baseline="middle"
+        font-family="'DM Mono',monospace" font-size="11" fill="${c}" font-weight="500">${pct}%</text>
+    </svg>
+    <div class="circle-name">${exam.name}</div>
+  </div>`;
+}
+
+function render() {
+  const container = document.getElementById('cards');
+  container.innerHTML = '';
+  let circlesHTML = '';
+  let nextExam = null, nextD = Infinity;
+
+  S.exams.forEach(exam => {
+    const d = daysTo(exam.date);
+    const doneN = exam.milestones.filter((_,i) => S.checked[exam.id+'_'+i]).length;
+    const pct = exam.milestones.length ? Math.round(doneN/exam.milestones.length*100) : 0;
+    if (d>=0 && d<nextD) { nextD=d; nextExam=exam; }
+    circlesHTML += circle(exam, pct);
+
+    const card = document.createElement('div');
+    card.className = 'exam-card';
+
+    // Header
+    card.innerHTML = `
+      <div class="card-top">
+        <div class="card-left">
+          <div class="exam-name">${exam.name}</div>
+          <div class="exam-type">${exam.meta}</div>
+        </div>
+        <div class="card-right">
+          <span class="countdown ${ctClass(d,exam.color)}">${ctText(d)}</span>
+          <div class="progress-track"><div class="progress-fill pf-${exam.color}" style="width:${pct}%"></div></div>
+          <div class="progress-label">${doneN}/${exam.milestones.length} milestones</div>
+        </div>
+      </div>`;
+
+    // Milestones
+    const msDiv = document.createElement('div');
+    msDiv.className = 'milestones';
+
+    exam.milestones.forEach((m, i) => {
+      const key = exam.id+'_'+i;
+      const done = !!S.checked[key];
+      const isEditing = editing && editing.examId===exam.id && editing.idx===i;
+
+      if (isEditing) {
+        const er = document.createElement('div');
+        er.className = 'edit-row';
+        er.innerHTML = `
+          <input type="text" id="ei-label" value="${m.label.replace(/"/g,'&quot;')}" />
+          <input type="date" id="ei-due" value="${m.due}" />
+          <button class="btn-save" id="ei-save">Save</button>
+          <button class="btn-cancel" id="ei-cancel">Cancel</button>`;
+        msDiv.appendChild(er);
+        setTimeout(()=>{ const el=document.getElementById('ei-label'); if(el){el.focus();el.select();} },20);
+        document.getElementById('ei-save').onclick = () => doSave(exam.id, i);
+        document.getElementById('ei-cancel').onclick = () => { editing=null; render(); };
+        document.getElementById('ei-label').onkeydown = e => { if(e.key==='Enter') doSave(exam.id,i); if(e.key==='Escape'){editing=null;render();} };
+      } else {
+        const md = daysTo(m.due);
+        const hot = md<=1 && !done;
+        const row = document.createElement('div');
+        row.className = 'ms-row';
+        row.innerHTML = `
+          <div class="cb cb-${exam.color} ${done?'done':''}" title="Toggle complete"><div class="ck"></div></div>
+          <div class="m-body">
+            <div class="m-text ${done?'done':''}">${m.label}</div>
+            <div class="m-date ${hot?'hot':''}">${hot?'Due soon · ':''}${fmtDate(m.due)}</div>
+          </div>
+          <div class="m-actions">
+            <button class="act" title="Edit">edit</button>
+            <button class="act del" title="Delete">delete</button>
+          </div>`;
+        row.querySelector('.cb').onclick = e => { e.stopPropagation(); S.checked[key]=!S.checked[key]; persist(); render(); };
+        row.querySelectorAll('.act')[0].onclick = e => { e.stopPropagation(); editing={examId:exam.id,idx:i}; render(); };
+        row.querySelectorAll('.act')[1].onclick = e => { e.stopPropagation(); doDelete(exam.id,i); };
+        msDiv.appendChild(row);
+      }
+    });
+
+    // Add row
+    const addRow = document.createElement('div');
+    addRow.className = 'add-row';
+    addRow.innerHTML = `
+      <input type="text" id="ai-label-${exam.id}" placeholder="Add a milestone…" />
+      <input type="date" id="ai-due-${exam.id}" value="${exam.date}" />
+      <button class="btn-add">+ add</button>`;
+    addRow.querySelector('.btn-add').onclick = () => doAdd(exam.id);
+    addRow.querySelector('input[type="text"]').onkeydown = e => { if(e.key==='Enter') doAdd(exam.id); };
+    msDiv.appendChild(addRow);
+
+    card.appendChild(msDiv);
+    container.appendChild(card);
+  });
+
+  document.getElementById('circles-row').innerHTML = circlesHTML;
+  if (nextExam) {
+    document.getElementById('s-next').textContent = nextExam.name+' · '+fmtDate(nextExam.date);
+    const nd = daysTo(nextExam.date);
+    document.getElementById('next-up').textContent =
+      nd<=7 ? `MPRE in ${nd} day${nd===1?'':'s'} — start today.`
+      : `Next up: ${nextExam.name} in ${nd} days.`;
+  }
+}
+
+function doSave(examId, idx) {
+  const label = (document.getElementById('ei-label').value||'').trim();
+  const due = document.getElementById('ei-due').value;
+  if (!label) return;
+  const exam = S.exams.find(e=>e.id===examId);
+  if (exam) { exam.milestones[idx] = {label, due: due||exam.date}; persist(); }
+  editing = null; render();
+}
+
+function doDelete(examId, idx) {
+  const exam = S.exams.find(e=>e.id===examId);
+  if (!exam) return;
+  exam.milestones.splice(idx,1);
+  const nc = {};
+  Object.keys(S.checked).forEach(k => {
+    if (!k.startsWith(examId+'_')) { nc[k]=S.checked[k]; return; }
+    const n = parseInt(k.split('_')[1]);
+    if (n<idx) nc[k]=S.checked[k];
+    else if (n>idx) nc[examId+'_'+(n-1)]=S.checked[k];
+  });
+  S.checked = nc;
+  persist(); render();
+}
+
+function doAdd(examId) {
+  const labelEl = document.getElementById('ai-label-'+examId);
+  const dueEl = document.getElementById('ai-due-'+examId);
+  const label = (labelEl.value||'').trim();
+  if (!label) { labelEl.focus(); return; }
+  const exam = S.exams.find(e=>e.id===examId);
+  if (exam) { exam.milestones.push({label, due: dueEl.value||exam.date}); persist(); render(); }
+}
+
+render();
+</script>
+</body>
+</html>
