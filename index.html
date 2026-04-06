@@ -96,6 +96,11 @@
   .progress-label { font-family: var(--mono); font-size: 10px; color: var(--muted); }
   .pacing-label { font-family: var(--mono); font-size: 10px; color: var(--muted); }
   .pacing-behind { color: var(--red); }
+  .badges-row { display: flex; gap: 5px; align-items: center; justify-content: flex-end; flex-wrap: wrap; }
+  .pacing-pill { font-family: var(--mono); font-size: 11px; padding: 3px 10px; border-radius: 20px; font-weight: 500; white-space: nowrap; }
+  .pace-easy   { background: rgba(39,174,96,0.12);  color: #1d7a43; }
+  .pace-mid    { background: var(--amber-bg);        color: var(--amber); }
+  .pace-hard   { background: var(--red-bg);          color: var(--red); }
 
   .btn-delete-project { background: none; border: none; font-family: var(--mono); font-size: 10px; color: var(--muted); cursor: pointer; padding: 2px 6px; border-radius: 4px; opacity: 0; transition: opacity 0.15s, color 0.12s, background 0.12s; white-space: nowrap; margin-top: 2px; }
   .exam-card:hover .btn-delete-project { opacity: 1; }
@@ -525,11 +530,11 @@ function renderProjects() {
 
     // Pacing: milestones/day needed
     const remaining = total - doneN;
-    let pacingHTML = '';
+    let pacingPill = '';
     if (d > 0 && remaining > 0) {
-      const rate = (remaining / d).toFixed(1);
-      const behind = parseFloat(rate) > 3;
-      pacingHTML = `<div class="pacing-label ${behind?'pacing-behind':''}">${rate}/day needed</div>`;
+      const rate = parseFloat((remaining / d).toFixed(1));
+      const cls = rate <= 1 ? 'pace-easy' : rate <= 3 ? 'pace-mid' : 'pace-hard';
+      pacingPill = `<span class="pacing-pill ${cls}">${rate}/day</span>`;
     }
 
     const card = document.createElement('div');
@@ -540,10 +545,12 @@ function renderProjects() {
         <div class="exam-type">${exam.meta}</div>
       </div>
       <div class="card-right">
-        <span class="countdown ${ctClass(d,exam.color)}">${ctText(d)}</span>
+        <div class="badges-row">
+          <span class="countdown ${ctClass(d,exam.color)}">${ctText(d)}</span>
+          ${pacingPill}
+        </div>
         <div class="progress-track"><div class="progress-fill pf-${exam.color}" style="width:${pct}%"></div></div>
         <div class="progress-label">${doneN}/${total} milestones</div>
-        ${pacingHTML}
         <button class="btn-delete-project">× delete project</button>
       </div>
     </div>`;
