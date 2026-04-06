@@ -338,7 +338,7 @@
 
 <script>
 const GEMINI_KEY = 'AIzaSyDfysJec2GNs_P51Y-7EPBrpelIThHbqSs';
-const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_KEY}`;
+const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_KEY}`;
 
 const TODAY = new Date(); TODAY.setHours(0,0,0,0);
 const todayStr = () => TODAY.toISOString().split('T')[0];
@@ -452,6 +452,9 @@ Guidelines:
     if (!res.ok) throw new Error(data.error?.message || 'API error');
     let text = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || '';
     text = text.replace(/^```json\s*/i,'').replace(/^```\s*/i,'').replace(/```\s*$/i,'').trim();
+    // Fallback: extract first JSON object if surrounding text remains
+    const jsonMatch = text.match(/\{[\s\S]*\}/);
+    if (jsonMatch) text = jsonMatch[0];
     const parsed = JSON.parse(text);
     aiPending = parsed;
     showAIConfirm(parsed);
