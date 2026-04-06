@@ -36,7 +36,7 @@
   .datestamp { font-family: var(--mono); font-size: 11px; color: var(--muted); }
 
   /* ── Today strip ── */
-  .today-strip { margin-bottom: 1.5rem; }
+  .today-strip { margin-bottom: 1.5rem; position: sticky; top: 0; z-index: 50; background: var(--bg); padding-top: 0.75rem; padding-bottom: 0.75rem; border-bottom: 0.5px solid var(--border); }
   .today-hdr { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
   .today-title { font-family: var(--mono); font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text); }
   .today-clear { font-family: var(--mono); font-size: 10px; color: var(--muted); background: none; border: none; cursor: pointer; letter-spacing: 0.04em; padding: 0; }
@@ -240,7 +240,7 @@
 <!-- Today strip -->
 <div class="today-strip" id="today-strip" style="display:none">
   <div class="today-hdr">
-    <span class="today-title">today's focus</span>
+    <span class="today-title">Today</span>
     <button class="today-clear" onclick="clearToday()">clear all</button>
   </div>
   <div id="today-picks"></div>
