@@ -551,10 +551,10 @@ function renderProjects() {
         <button class="btn-save" id="pe-save">Save</button>
         <button class="btn-cancel" id="pe-cancel">Cancel</button>`;
       card.insertBefore(pef, card.querySelector('.milestones'));
-      setTimeout(() => { const el = document.getElementById('pe-name'); if(el){el.focus();el.select();} }, 20);
-      document.getElementById('pe-save').onclick = () => doSaveProject(exam.id);
-      document.getElementById('pe-cancel').onclick = () => { pEditingProject = null; renderProjects(); };
-      document.getElementById('pe-name').onkeydown = e => { if(e.key==='Enter') doSaveProject(exam.id); if(e.key==='Escape'){pEditingProject=null;renderProjects();} };
+      setTimeout(() => { const el = pef.querySelector('#pe-name'); if(el){el.focus();el.select();} }, 20);
+      pef.querySelector('#pe-save').onclick = () => doSaveProject(exam.id);
+      pef.querySelector('#pe-cancel').onclick = () => { pEditingProject = null; renderProjects(); };
+      pef.querySelector('#pe-name').onkeydown = e => { if(e.key==='Enter') doSaveProject(exam.id); if(e.key==='Escape'){pEditingProject=null;renderProjects();} };
     }
 
     const msDiv = document.createElement('div');
@@ -570,10 +570,10 @@ function renderProjects() {
         er.className = 'edit-row';
         er.innerHTML = `<input type="text" id="ei-label" value="${m.label.replace(/"/g,'&quot;')}" /><input type="date" id="ei-due" value="${m.due}" /><button class="btn-save" id="ei-save">Save</button><button class="btn-cancel" id="ei-cancel">Cancel</button>`;
         msDiv.appendChild(er);
-        setTimeout(()=>{ const el=document.getElementById('ei-label'); if(el){el.focus();el.select();} },20);
-        document.getElementById('ei-save').onclick = () => doSave(exam.id, i);
-        document.getElementById('ei-cancel').onclick = () => { pEditing=null; renderProjects(); };
-        document.getElementById('ei-label').onkeydown = e => { if(e.key==='Enter') doSave(exam.id,i); if(e.key==='Escape'){pEditing=null;renderProjects();} };
+        setTimeout(()=>{ const el=er.querySelector('#ei-label'); if(el){el.focus();el.select();} },20);
+        er.querySelector('#ei-save').onclick = () => doSave(exam.id, i);
+        er.querySelector('#ei-cancel').onclick = () => { pEditing=null; renderProjects(); };
+        er.querySelector('#ei-label').onkeydown = e => { if(e.key==='Enter') doSave(exam.id,i); if(e.key==='Escape'){pEditing=null;renderProjects();} };
       } else {
         const md = daysTo(m.due), hot = md<=1 && !done;
         const row = document.createElement('div');
