@@ -34,27 +34,31 @@
   .wordmark { font-family: var(--mono); font-size: 11px; letter-spacing: 0.12em; color: var(--muted); text-transform: uppercase; }
   .datestamp { font-family: var(--mono); font-size: 11px; color: var(--muted); }
 
-  /* ── AI bar ── */
-  .ai-bar { display: flex; gap: 8px; margin-bottom: 1.5rem; }
-  .ai-input { flex: 1; height: 40px; padding: 0 14px; background: var(--surface); border: 0.5px solid var(--border2); border-radius: 10px; font-family: var(--sans); font-size: 13px; color: var(--text); outline: none; transition: border-color 0.15s, box-shadow 0.15s; }
-  .ai-input::placeholder { color: var(--muted); }
-  .ai-input:focus { border-color: var(--blue); box-shadow: 0 0 0 3px rgba(26,95,168,0.1); }
-  .ai-btn { height: 40px; padding: 0 18px; background: var(--text); border: none; border-radius: 10px; font-family: var(--mono); font-size: 11px; letter-spacing: 0.06em; color: #fff; cursor: pointer; white-space: nowrap; transition: opacity 0.15s; }
-  .ai-btn:hover { opacity: 0.8; }
-  .ai-btn:disabled { opacity: 0.4; cursor: default; }
-
-  /* AI confirmation */
-  .ai-confirm { background: var(--surface); border: 0.5px solid var(--blue); border-radius: 12px; padding: 1rem 1.25rem; margin-bottom: 1.25rem; display: none; }
-  .ai-confirm.show { display: block; }
-  .ai-confirm-label { font-family: var(--mono); font-size: 10px; color: var(--blue); letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 8px; }
-  .ai-confirm-body { font-size: 13px; color: var(--text); margin-bottom: 10px; line-height: 1.5; }
-  .ai-confirm-actions { display: flex; gap: 8px; }
-  .ai-confirm-ok { background: var(--blue); border: none; border-radius: 6px; padding: 5px 16px; font-family: var(--mono); font-size: 10px; color: #fff; cursor: pointer; letter-spacing: 0.04em; }
-  .ai-confirm-ok:hover { opacity: 0.85; }
-  .ai-confirm-cancel { background: none; border: 0.5px solid var(--border2); border-radius: 6px; padding: 5px 12px; font-family: var(--mono); font-size: 10px; color: var(--muted); cursor: pointer; }
-  .ai-confirm-cancel:hover { color: var(--text); }
-  .ai-error { font-family: var(--mono); font-size: 11px; color: var(--red); margin-bottom: 1rem; display: none; }
-  .ai-error.show { display: block; }
+  /* ── Today strip ── */
+  .today-strip { margin-bottom: 1.5rem; }
+  .today-hdr { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+  .today-title { font-family: var(--mono); font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text); }
+  .today-clear { font-family: var(--mono); font-size: 10px; color: var(--muted); background: none; border: none; cursor: pointer; letter-spacing: 0.04em; padding: 0; }
+  .today-clear:hover { color: var(--red); }
+  .today-pick { display: flex; align-items: center; gap: 10px; padding: 9px 14px; background: var(--surface); border: 0.5px solid var(--border); border-radius: 8px; margin-bottom: 4px; }
+  .today-pick-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+  .today-pick-name { flex: 1; font-size: 13px; color: var(--text); }
+  .today-pick-name.is-done { text-decoration: line-through; color: var(--muted); }
+  .today-pick-tag { font-family: var(--mono); font-size: 10px; color: var(--muted); letter-spacing: 0.04em; flex-shrink: 0; }
+  .today-cb { width: 15px; height: 15px; border: 1.5px solid var(--border2); border-radius: 4px; cursor: pointer; flex-shrink: 0; display: flex; align-items: center; justify-content: center; transition: all 0.12s; }
+  .today-cb:hover { border-color: var(--text); }
+  .today-cb.done { background: var(--text); border-color: var(--text); }
+  .today-cb.done::after { content:''; width:8px; height:5px; border-left:1.5px solid #fff; border-bottom:1.5px solid #fff; transform:rotate(-45deg) translateY(-1px); display:block; }
+  .today-rm { background: none; border: none; cursor: pointer; color: var(--muted); font-size: 16px; line-height: 1; padding: 0; transition: color 0.12s; flex-shrink: 0; }
+  .today-rm:hover { color: var(--red); }
+  /* Pin buttons */
+  .btn-pin-today { background: none; border: none; font-family: var(--mono); font-size: 10px; cursor: pointer; padding: 2px 6px; border-radius: 4px; opacity: 0; transition: opacity 0.15s, color 0.12s; white-space: nowrap; color: var(--muted); }
+  .exam-card:hover .btn-pin-today { opacity: 1; }
+  .btn-pin-today.pinned { opacity: 1; color: var(--amber); }
+  .btn-pin-today:hover { color: var(--amber); }
+  .t-pin-btn { background: none; border: 0.5px solid var(--border); border-radius: 4px; cursor: pointer; font-family: var(--mono); font-size: 10px; color: var(--muted); padding: 2px 7px; transition: all 0.12s; white-space: nowrap; }
+  .t-pin-btn:hover { border-color: rgba(181,98,10,0.4); color: var(--amber); background: rgba(181,98,10,0.06); }
+  .t-pin-btn.pinned { border-color: rgba(181,98,10,0.4); color: var(--amber); background: rgba(181,98,10,0.08); }
 
   /* ── Tabs ── */
   .tabs { display: flex; gap: 0; margin-bottom: 1.75rem; border-bottom: 0.5px solid var(--border); }
@@ -232,19 +236,13 @@
   <span class="datestamp" id="today-label"></span>
 </div>
 
-<!-- AI bar -->
-<div class="ai-bar">
-  <input class="ai-input" id="ai-input" placeholder="Tell me what to add — project, task, deadline, anything…" />
-  <button class="ai-btn" id="ai-btn">Ask AI →</button>
-</div>
-<div class="ai-error" id="ai-error"></div>
-<div class="ai-confirm" id="ai-confirm">
-  <div class="ai-confirm-label">AI suggestion — confirm to add</div>
-  <div class="ai-confirm-body" id="ai-confirm-body"></div>
-  <div class="ai-confirm-actions">
-    <button class="ai-confirm-ok" id="ai-confirm-ok">Add it</button>
-    <button class="ai-confirm-cancel" id="ai-confirm-cancel">Dismiss</button>
+<!-- Today strip -->
+<div class="today-strip" id="today-strip" style="display:none">
+  <div class="today-hdr">
+    <span class="today-title">today's focus</span>
+    <button class="today-clear" onclick="clearToday()">clear all</button>
   </div>
+  <div id="today-picks"></div>
 </div>
 
 <!-- Tabs -->
@@ -342,8 +340,6 @@
 </div>
 
 <script>
-const GEMINI_KEY = 'AIzaSyDfysJec2GNs_P51Y-7EPBrpelIThHbqSs';
-const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_KEY}`;
 
 const TODAY = new Date(); TODAY.setHours(0,0,0,0);
 const todayStr = () => TODAY.toISOString().split('T')[0];
@@ -370,7 +366,6 @@ let pEditing = null;
 let newPColor = 'red';
 let tUrgentOn = false;
 let tFilter = 'today';
-let aiPending = null; // the parsed AI result waiting for confirmation
 
 function pPersist() { try { localStorage.setItem(PSK, JSON.stringify(P)); } catch(e) {} }
 function tPersist() { try { localStorage.setItem(TSK, JSON.stringify(T)); } catch(e) {} }
@@ -399,104 +394,69 @@ function switchTab(tab) {
   });
 }
 
-// ─── AI ───
-document.getElementById('ai-btn').onclick = runAI;
-document.getElementById('ai-input').addEventListener('keydown', e => { if(e.key==='Enter') runAI(); });
-document.getElementById('ai-confirm-cancel').onclick = () => {
-  aiPending = null;
-  document.getElementById('ai-confirm').classList.remove('show');
-};
-document.getElementById('ai-confirm-ok').onclick = () => {
-  if (!aiPending) return;
-  if (aiPending.type === 'project') applyAIProject(aiPending);
-  else applyAITask(aiPending);
-  aiPending = null;
-  document.getElementById('ai-confirm').classList.remove('show');
-  document.getElementById('ai-input').value = '';
-};
+// ─── Today focus ───
+const FDSK = 'cc_focus_v1';
+let F = { date: '', picks: [] };
+try {
+  const raw = localStorage.getItem(FDSK);
+  if (raw) F = JSON.parse(raw);
+  if (F.date !== todayStr()) F = { date: todayStr(), picks: [] };
+} catch(e) { F = { date: todayStr(), picks: [] }; }
+function fPersist() { try { localStorage.setItem(FDSK, JSON.stringify(F)); } catch(e) {} }
 
-async function runAI() {
-  const input = document.getElementById('ai-input').value.trim();
-  if (!input) return;
-  const btn = document.getElementById('ai-btn');
-  const errEl = document.getElementById('ai-error');
-  errEl.classList.remove('show');
-  document.getElementById('ai-confirm').classList.remove('show');
-  btn.disabled = true; btn.textContent = 'Thinking…';
+function isInToday(type, id) { return F.picks.some(p => p.type===type && String(p.id)===String(id)); }
 
-  const systemPrompt = `You are a parser for a personal command center app. Parse the user's natural language and return structured JSON.
-
-Today is ${todayStr()}.
-
-Return ONE of these JSON shapes:
-
-PROJECT (has a deadline and multiple steps/milestones):
-{"type":"project","name":"...","date":"YYYY-MM-DD","color":"red|amber|blue|green|purple","milestones":[{"label":"...","due":"YYYY-MM-DD"}]}
-
-TASK (simple to-do, errand, bill, reminder, one-off action):
-{"type":"task","text":"...","urgent":true|false,"surfaceDate":"YYYY-MM-DD or null"}
-
-Guidelines:
-- color: red=urgent exam/deadline, amber=medium-term work, blue=academic/reading, green=personal/health/life, purple=creative/side-project
-- milestones: infer 3-8 reasonable steps, spaced between today and deadline
-- urgent: true if due within 7 days or user says urgent/asap/today
-- surfaceDate: if the user says "next week" or "remind me on X date", set that date; otherwise null
-- Return ONLY valid JSON. No markdown, no explanation, no code fences.`;
-
-  try {
-    const res = await fetch(GEMINI_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [{ role: 'user', parts: [{ text: input }] }],
-        systemInstruction: { parts: [{ text: systemPrompt }] },
-        generationConfig: { temperature: 0.1, maxOutputTokens: 1024 }
-      })
-    });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error?.message || 'API error');
-    let text = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || '';
-    text = text.replace(/^```json\s*/i,'').replace(/^```\s*/i,'').replace(/```\s*$/i,'').trim();
-    // Fallback: extract first JSON object if surrounding text remains
-    const jsonMatch = text.match(/\{[\s\S]*\}/);
-    if (jsonMatch) text = jsonMatch[0];
-    const parsed = JSON.parse(text);
-    aiPending = parsed;
-    showAIConfirm(parsed);
-  } catch(e) {
-    errEl.textContent = e.message || 'Could not parse response. Try rephrasing.';
-    errEl.classList.add('show');
-  } finally {
-    btn.disabled = false; btn.textContent = 'Ask AI →';
+function toggleTodayProject(id, name, color) {
+  if (isInToday('project', id)) {
+    F.picks = F.picks.filter(p => !(p.type==='project' && String(p.id)===String(id)));
+  } else if (F.picks.length < 5) {
+    F.picks.push({ type:'project', id, name, color: color||'blue' });
   }
+  fPersist(); renderToday(); renderProjects(); renderTasks();
 }
 
-function showAIConfirm(p) {
-  let body = '';
-  if (p.type === 'project') {
-    body = `<strong>Project:</strong> ${p.name} — due ${fmtDate(p.date)}<br>`;
-    if (p.milestones?.length) body += `<span style="color:var(--muted);font-size:12px">${p.milestones.length} milestones: ${p.milestones.slice(0,3).map(m=>m.label).join(', ')}${p.milestones.length>3?'…':''}</span>`;
-  } else {
-    body = `<strong>Task:</strong> ${p.text}`;
-    if (p.urgent) body += ` <span style="color:var(--red);font-size:11px;font-family:var(--mono)">· urgent</span>`;
-    if (p.surfaceDate) body += `<br><span style="color:var(--muted);font-size:12px">surfaces ${fmtDate(p.surfaceDate)}</span>`;
+function toggleTodayTask(id) {
+  const task = T.items.find(t => t.id === id);
+  if (!task) return;
+  if (isInToday('task', id)) {
+    F.picks = F.picks.filter(p => !(p.type==='task' && String(p.id)===String(id)));
+  } else if (F.picks.length < 5) {
+    F.picks.push({ type:'task', id, name: task.text });
   }
-  document.getElementById('ai-confirm-body').innerHTML = body;
-  document.getElementById('ai-confirm').classList.add('show');
+  fPersist(); renderToday(); renderProjects(); renderTasks();
 }
 
-function applyAIProject(p) {
-  const id = 'proj_' + Date.now();
-  const fmtd = new Date(p.date+'T12:00:00').toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'});
-  P.exams.push({ id, name: p.name, meta: fmtd, date: p.date, color: p.color||'blue', milestones: p.milestones||[] });
-  pPersist(); renderProjects();
-  switchTab('projects');
+function clearToday() { F.picks=[]; fPersist(); renderToday(); renderProjects(); renderTasks(); }
+
+function removePick(type, id) {
+  F.picks = F.picks.filter(p => !(p.type===type && String(p.id)===String(id)));
+  fPersist(); renderToday(); renderProjects(); renderTasks();
 }
 
-function applyAITask(p) {
-  T.items.push({ id: T.nextId++, text: p.text, urgent: !!p.urgent, done: false, surfaceDate: p.surfaceDate||null, ts: Date.now() });
-  tPersist(); renderTasks();
-  switchTab('tasks');
+function todayCheckTask(id) { tToggleDone(id); renderToday(); }
+
+function renderToday() {
+  const strip = document.getElementById('today-strip');
+  const el = document.getElementById('today-picks');
+  strip.style.display = F.picks.length ? '' : 'none';
+  if (!F.picks.length) { el.innerHTML=''; return; }
+  const colorMap = { red:'var(--red)', amber:'var(--amber)', blue:'var(--blue)', green:'var(--green)', purple:'var(--purple)' };
+  el.innerHTML = F.picks.map(p => {
+    const task = p.type==='task' ? T.items.find(t => String(t.id)===String(p.id)) : null;
+    const isDone = task && task.done;
+    const dot = p.type==='project' ? (colorMap[p.color]||'var(--blue)') : 'var(--muted)';
+    const cb = p.type==='task'
+      ? `<div class="today-cb${isDone?' done':''}" onclick="todayCheckTask(${p.id})" title="Mark done"></div>`
+      : '';
+    const idJson = JSON.stringify(String(p.id));
+    return `<div class="today-pick">
+      <div class="today-pick-dot" style="background:${dot}"></div>
+      <div class="today-pick-name${isDone?' is-done':''}">${p.name}</div>
+      <span class="today-pick-tag">${p.type}</span>
+      ${cb}
+      <button class="today-rm" onclick="removePick('${p.type}',${idJson})">×</button>
+    </div>`;
+  }).join('');
 }
 
 // ─── Projects rendering ───
@@ -551,13 +511,20 @@ function renderProjects() {
         </div>
         <div class="progress-track"><div class="progress-fill pf-${exam.color}" style="width:${pct}%"></div></div>
         <div class="progress-label">${doneN}/${total} milestones</div>
-        <button class="btn-delete-project">× delete project</button>
+        <div style="display:flex;gap:4px;justify-content:flex-end">
+          <button class="btn-pin-today${isInToday('project',exam.id)?' pinned':''}">· today</button>
+          <button class="btn-delete-project">× delete</button>
+        </div>
       </div>
     </div>`;
 
     card.querySelector('.btn-delete-project').onclick = e => {
       e.stopPropagation();
       if (confirm(`Delete "${exam.name}"? This cannot be undone.`)) doDeleteProject(exam.id);
+    };
+    card.querySelector('.btn-pin-today').onclick = e => {
+      e.stopPropagation();
+      toggleTodayProject(exam.id, exam.name, exam.color);
     };
 
     const msDiv = document.createElement('div');
@@ -746,6 +713,7 @@ function tItemHtml(t, today) {
   const actions=[];
   if(!t.done&&!isSched) actions.push(`<button class="t-urg-btn${t.urgent?' on':''}" onclick="tToggleUrgentItem(${t.id})">! urgent</button>`);
   if(!t.done) actions.push(`<input type="date" class="t-inline-date${t.surfaceDate?' has-date':''}" value="${t.surfaceDate||''}" onchange="tSetDate(${t.id},this.value)" title="Hide until this date" />`);
+  if(!t.done) actions.push(`<button class="t-pin-btn${isInToday('task',t.id)?' pinned':''}" onclick="toggleTodayTask(${t.id})">· today</button>`);
   actions.push(`<button class="t-del" onclick="tRemove(${t.id})">×</button>`);
   return `<div class="t-item${cls}">
     <div class="t-cb-wrap">${cb}</div>
@@ -755,6 +723,7 @@ function tItemHtml(t, today) {
 }
 
 // ─── Init ───
+renderToday();
 renderProjects();
 renderTasks();
 </script>
