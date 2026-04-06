@@ -110,6 +110,14 @@
   .btn-delete-project { background: none; border: none; font-family: var(--mono); font-size: 10px; color: var(--muted); cursor: pointer; padding: 2px 6px; border-radius: 4px; opacity: 0; transition: opacity 0.15s, color 0.12s, background 0.12s; white-space: nowrap; margin-top: 2px; }
   .exam-card:hover .btn-delete-project { opacity: 1; }
   .btn-delete-project:hover { color: var(--red); background: var(--red-bg); }
+  .btn-edit-project { background: none; border: none; font-family: var(--mono); font-size: 10px; color: var(--muted); cursor: pointer; padding: 2px 6px; border-radius: 4px; opacity: 0; transition: opacity 0.15s, color 0.12s, background 0.12s; white-space: nowrap; margin-top: 2px; }
+  .exam-card:hover .btn-edit-project { opacity: 1; }
+  .btn-edit-project:hover { color: var(--blue); background: var(--blue-bg); }
+  .proj-edit-form { padding: 1rem 1.5rem; background: #eef3fa; border-bottom: 0.5px solid var(--border); display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+  .proj-edit-form input[type="text"] { flex: 1; min-width: 140px; background: #fff; border: 0.5px solid #a8c4e8; border-radius: 6px; padding: 6px 10px; font-family: var(--sans); font-size: 13px; color: var(--text); outline: none; }
+  .proj-edit-form input[type="text"]:focus { border-color: var(--blue); }
+  .proj-edit-form input[type="date"] { background: #fff; border: 0.5px solid #a8c4e8; border-radius: 6px; padding: 6px 8px; font-family: var(--mono); font-size: 11px; color: var(--text); outline: none; }
+  .proj-edit-form input[type="date"]:focus { border-color: var(--blue); }
 
   .milestones { border-top: 0.5px solid var(--border); border-radius: 0 0 12px 12px; overflow: hidden; }
   .ms-row { display: flex; align-items: center; gap: 10px; padding: 0.6rem 1.5rem; border-bottom: 0.5px solid var(--border); transition: background 0.12s; position: relative; }
@@ -364,6 +372,7 @@ try {
 } catch(e) {}
 
 let pEditing = null;
+let pEditingProject = null; // id of project whose header is being edited
 let newPColor = 'red';
 let tUrgentOn = false;
 let tFilter = 'today';
@@ -513,7 +522,10 @@ function renderProjects() {
         </div>
         <div class="progress-track"><div class="progress-fill pf-${exam.color}" style="width:${pct}%"></div></div>
         <div class="progress-label">${doneN}/${total} milestones</div>
-        <button class="btn-delete-project">× delete</button>
+        <div style="display:flex;gap:2px;justify-content:flex-end">
+          <button class="btn-edit-project">edit</button>
+          <button class="btn-delete-project">× delete</button>
+        </div>
       </div>
     </div>`;
 
@@ -521,10 +533,29 @@ function renderProjects() {
       e.stopPropagation();
       if (confirm(`Delete "${exam.name}"? This cannot be undone.`)) doDeleteProject(exam.id);
     };
+    card.querySelector('.btn-edit-project').onclick = e => {
+      e.stopPropagation();
+      pEditingProject = exam.id; renderProjects();
+    };
     card.querySelector('.btn-pin-today').onclick = e => {
       e.stopPropagation();
       toggleTodayProject(exam.id, exam.name, exam.color);
     };
+
+    // Inject project edit form if this card is being edited
+    if (pEditingProject === exam.id) {
+      const pef = document.createElement('div');
+      pef.className = 'proj-edit-form';
+      pef.innerHTML = `<input type="text" id="pe-name" value="${exam.name.replace(/"/g,'&quot;')}" placeholder="Project name" />
+        <input type="date" id="pe-date" value="${exam.date}" />
+        <button class="btn-save" id="pe-save">Save</button>
+        <button class="btn-cancel" id="pe-cancel">Cancel</button>`;
+      card.insertBefore(pef, card.querySelector('.milestones'));
+      setTimeout(() => { const el = document.getElementById('pe-name'); if(el){el.focus();el.select();} }, 20);
+      document.getElementById('pe-save').onclick = () => doSaveProject(exam.id);
+      document.getElementById('pe-cancel').onclick = () => { pEditingProject = null; renderProjects(); };
+      document.getElementById('pe-name').onkeydown = e => { if(e.key==='Enter') doSaveProject(exam.id); if(e.key==='Escape'){pEditingProject=null;renderProjects();} };
+    }
 
     const msDiv = document.createElement('div');
     msDiv.className = 'milestones';
@@ -601,6 +632,18 @@ function doAdd(examId) {
   const label=(lEl.value||'').trim(); if(!label){lEl.focus();return;}
   const exam=P.exams.find(e=>e.id===examId);
   if(exam){exam.milestones.push({label,due:dEl.value||exam.date});pPersist();renderProjects();}
+}
+function doSaveProject(id) {
+  const name = (document.getElementById('pe-name').value||'').trim();
+  const date = document.getElementById('pe-date').value;
+  if (!name || !date) return;
+  const exam = P.exams.find(e => e.id === id);
+  if (exam) {
+    exam.name = name;
+    exam.date = date;
+    exam.meta = new Date(date+'T12:00:00').toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'});
+  }
+  pEditingProject = null; pPersist(); renderProjects();
 }
 function doDeleteProject(id) {
   P.exams=P.exams.filter(e=>e.id!==id);
