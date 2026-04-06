@@ -52,13 +52,13 @@
   .today-rm { background: none; border: none; cursor: pointer; color: var(--muted); font-size: 16px; line-height: 1; padding: 0; transition: color 0.12s; flex-shrink: 0; }
   .today-rm:hover { color: var(--red); }
   /* Pin buttons */
-  .btn-pin-today { background: none; border: none; font-family: var(--mono); font-size: 10px; cursor: pointer; padding: 2px 6px; border-radius: 4px; opacity: 0; transition: opacity 0.15s, color 0.12s; white-space: nowrap; color: var(--muted); }
+  .btn-pin-today { background: none; border: none; font-size: 13px; cursor: pointer; padding: 1px 4px; border-radius: 4px; opacity: 0; transition: opacity 0.15s, filter 0.12s; line-height: 1; filter: grayscale(1) opacity(0.4); }
   .exam-card:hover .btn-pin-today { opacity: 1; }
-  .btn-pin-today.pinned { opacity: 1; color: var(--amber); }
-  .btn-pin-today:hover { color: var(--amber); }
-  .t-pin-btn { background: none; border: 0.5px solid var(--border); border-radius: 4px; cursor: pointer; font-family: var(--mono); font-size: 10px; color: var(--muted); padding: 2px 7px; transition: all 0.12s; white-space: nowrap; }
-  .t-pin-btn:hover { border-color: rgba(181,98,10,0.4); color: var(--amber); background: rgba(181,98,10,0.06); }
-  .t-pin-btn.pinned { border-color: rgba(181,98,10,0.4); color: var(--amber); background: rgba(181,98,10,0.08); }
+  .btn-pin-today.pinned { opacity: 1; filter: none; }
+  .btn-pin-today:hover { filter: none; opacity: 1; }
+  .t-pin-btn { background: none; border: none; cursor: pointer; font-size: 13px; color: var(--muted); padding: 2px 4px; line-height: 1; transition: filter 0.12s; filter: grayscale(1) opacity(0.4); }
+  .t-pin-btn:hover { filter: none; }
+  .t-pin-btn.pinned { filter: none; }
 
   /* ── Tabs ── */
   .tabs { display: flex; gap: 0; margin-bottom: 1.75rem; border-bottom: 0.5px solid var(--border); }
@@ -508,13 +508,11 @@ function renderProjects() {
         <div class="badges-row">
           <span class="countdown ${ctClass(d,exam.color)}">${ctText(d)}</span>
           ${pacingPill}
+          <button class="btn-pin-today${isInToday('project',exam.id)?' pinned':''}">☀</button>
         </div>
         <div class="progress-track"><div class="progress-fill pf-${exam.color}" style="width:${pct}%"></div></div>
         <div class="progress-label">${doneN}/${total} milestones</div>
-        <div style="display:flex;gap:4px;justify-content:flex-end">
-          <button class="btn-pin-today${isInToday('project',exam.id)?' pinned':''}">· today</button>
-          <button class="btn-delete-project">× delete</button>
-        </div>
+        <button class="btn-delete-project">× delete</button>
       </div>
     </div>`;
 
@@ -713,7 +711,7 @@ function tItemHtml(t, today) {
   const actions=[];
   if(!t.done&&!isSched) actions.push(`<button class="t-urg-btn${t.urgent?' on':''}" onclick="tToggleUrgentItem(${t.id})">! urgent</button>`);
   if(!t.done) actions.push(`<input type="date" class="t-inline-date${t.surfaceDate?' has-date':''}" value="${t.surfaceDate||''}" onchange="tSetDate(${t.id},this.value)" title="Hide until this date" />`);
-  if(!t.done) actions.push(`<button class="t-pin-btn${isInToday('task',t.id)?' pinned':''}" onclick="toggleTodayTask(${t.id})">· today</button>`);
+  if(!t.done) actions.push(`<button class="t-pin-btn${isInToday('task',t.id)?' pinned':''}" onclick="toggleTodayTask(${t.id})" title="Add to today's focus">☀</button>`);
   actions.push(`<button class="t-del" onclick="tRemove(${t.id})">×</button>`);
   return `<div class="t-item${cls}">
     <div class="t-cb-wrap">${cb}</div>
