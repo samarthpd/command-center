@@ -343,7 +343,7 @@
 
 <script>
 const GEMINI_KEY = 'AIzaSyDfysJec2GNs_P51Y-7EPBrpelIThHbqSs';
-const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_KEY}`;
+const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_KEY}`;
 
 const TODAY = new Date(); TODAY.setHours(0,0,0,0);
 const todayStr = () => TODAY.toISOString().split('T')[0];
@@ -464,7 +464,7 @@ Guidelines:
     aiPending = parsed;
     showAIConfirm(parsed);
   } catch(e) {
-    errEl.textContent = 'Could not parse response. Try rephrasing.';
+    errEl.textContent = e.message || 'Could not parse response. Try rephrasing.';
     errEl.classList.add('show');
   } finally {
     btn.disabled = false; btn.textContent = 'Ask AI →';
