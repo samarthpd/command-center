@@ -34,6 +34,11 @@
   .top { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 1.75rem; border-bottom: 0.5px solid var(--border); padding-bottom: 1.25rem; }
   .wordmark { font-family: var(--mono); font-size: 11px; letter-spacing: 0.12em; color: var(--muted); text-transform: uppercase; }
   .datestamp { font-family: var(--mono); font-size: 11px; color: var(--muted); }
+  .sync-dot { width: 6px; height: 6px; border-radius: 50%; display: inline-block; margin-left: 7px; vertical-align: middle; transition: background 0.3s; }
+  .sync-dot.synced  { background: var(--green); }
+  .sync-dot.syncing { background: var(--amber); animation: blink 1s infinite; }
+  .sync-dot.error   { background: var(--red); }
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.25} }
 
   /* ── Today strip ── */
   .today-strip { margin-bottom: 1.5rem; position: sticky; top: 0; z-index: 50; background: var(--bg); padding-top: 0.75rem; padding-bottom: 0.75rem; border-bottom: 0.5px solid var(--border); }
@@ -242,7 +247,10 @@
 
 <div class="top">
   <span class="wordmark">Command Center</span>
-  <span class="datestamp" id="today-label"></span>
+  <span>
+    <span class="datestamp" id="today-label"></span>
+    <span class="sync-dot" id="sync-dot" title="Sync status"></span>
+  </span>
 </div>
 
 <!-- Today strip -->
@@ -377,8 +385,51 @@ let newPColor = 'red';
 let tUrgentOn = false;
 let tFilter = 'today';
 
-function pPersist() { try { localStorage.setItem(PSK, JSON.stringify(P)); } catch(e) {} }
-function tPersist() { try { localStorage.setItem(TSK, JSON.stringify(T)); } catch(e) {} }
+// ─── Cloud sync ───
+const WORKER = 'https://todo-worker.samarthpd.workers.dev';
+let syncTimer = null;
+
+function setSyncDot(status) {
+  const el = document.getElementById('sync-dot');
+  if (el) { el.className = 'sync-dot ' + status; el.title = {syncing:'Syncing…',synced:'Synced ✓',error:'Sync failed — changes saved locally'}[status]||''; }
+}
+
+function scheduleSync() {
+  clearTimeout(syncTimer);
+  syncTimer = setTimeout(pushState, 2000);
+}
+
+async function pushState() {
+  setSyncDot('syncing');
+  try {
+    const state = { __cc_state: true, P, T, F, ts: Date.now() };
+    const res = await fetch(`${WORKER}/tasks`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify([state])
+    });
+    if (!res.ok) throw new Error('non-200');
+    setSyncDot('synced');
+  } catch(e) { setSyncDot('error'); }
+}
+
+async function loadFromCloud() {
+  try {
+    const res = await fetch(`${WORKER}/tasks`);
+    if (!res.ok) return false;
+    const items = await res.json();
+    const state = Array.isArray(items) && items.find(x => x && x.__cc_state);
+    if (!state) { await pushState(); return false; } // cloud empty — push local state up
+    if (state.P) { P = state.P; if (!P.exams) P.exams = JSON.parse(JSON.stringify(DEFAULTS())); if (!P.checked) P.checked = {}; try { localStorage.setItem(PSK, JSON.stringify(P)); } catch(e) {} }
+    if (state.T) { T = state.T; if (!T.items) T.items = []; if (!T.nextId) T.nextId = 1; try { localStorage.setItem(TSK, JSON.stringify(T)); } catch(e) {} }
+    if (state.F) { F = state.F; if (F.date !== todayStr()) F = { date: todayStr(), picks: [] }; try { localStorage.setItem(FDSK, JSON.stringify(F)); } catch(e) {} }
+    return true;
+  } catch(e) { return false; }
+}
+
+function pPersist() { try { localStorage.setItem(PSK, JSON.stringify(P)); } catch(e) {} scheduleSync(); }
+function tPersist() { try { localStorage.setItem(TSK, JSON.stringify(T)); } catch(e) {} scheduleSync(); }
+function fPersist() { try { localStorage.setItem(FDSK, JSON.stringify(F)); } catch(e) {} scheduleSync(); }
 function daysTo(ds) { const d=new Date(ds); d.setHours(0,0,0,0); return Math.round((d-TODAY)/86400000); }
 function fmtDate(ds) { return new Date(ds+'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric'}); }
 function ctClass(d, color) { if(d<0) return 'c-'+color; if(d<=7) return 'c-red'; if(d<=21) return 'c-amber'; return 'c-'+color; }
@@ -412,7 +463,6 @@ try {
   if (raw) F = JSON.parse(raw);
   if (F.date !== todayStr()) F = { date: todayStr(), picks: [] };
 } catch(e) { F = { date: todayStr(), picks: [] }; }
-function fPersist() { try { localStorage.setItem(FDSK, JSON.stringify(F)); } catch(e) {} }
 
 function isInToday(type, id) { return F.picks.some(p => p.type===type && String(p.id)===String(id)); }
 
@@ -765,9 +815,14 @@ function tItemHtml(t, today) {
 }
 
 // ─── Init ───
-renderToday();
-renderProjects();
-renderTasks();
+(async () => {
+  setSyncDot('syncing');
+  await loadFromCloud();
+  renderToday();
+  renderProjects();
+  renderTasks();
+  setSyncDot('synced');
+})();
 </script>
 </body>
 </html>
