@@ -40,17 +40,26 @@
   .sync-dot.error   { background: var(--red); }
   @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.25} }
 
-  /* ── Today strip ── */
+  /* ── Today strip (always visible, sticky) ── */
   .today-strip { margin-bottom: 1.5rem; position: sticky; top: 0; z-index: 50; background: var(--bg); padding-top: 0.75rem; padding-bottom: 0.75rem; border-bottom: 0.5px solid var(--border); }
-  .today-hdr { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+  .today-hdr { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
   .today-title { font-family: var(--mono); font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text); }
   .today-clear { font-family: var(--mono); font-size: 10px; color: var(--muted); background: none; border: none; cursor: pointer; letter-spacing: 0.04em; padding: 0; }
   .today-clear:hover { color: var(--red); }
+  /* Activity row */
+  .today-activity { display: flex; align-items: center; gap: 10px; padding: 9px 14px; background: var(--surface); border: 0.5px solid var(--border); border-radius: 8px; margin-bottom: 4px; }
+  .today-activity-name { flex: 1; font-size: 13px; color: var(--text); }
+  .today-activity-streak { font-family: var(--mono); font-size: 11px; font-weight: 500; flex-shrink: 0; }
+  .streak-cold { color: var(--muted); }
+  .streak-warm { color: var(--amber); }
+  .streak-hot  { color: var(--red); }
+  /* Divider between activity and pins */
+  .today-divider { height: 0; border: none; border-top: 0.5px solid var(--border); margin: 4px 0; }
+  /* Pin rows */
   .today-pick { display: flex; align-items: center; gap: 10px; padding: 9px 14px; background: var(--surface); border: 0.5px solid var(--border); border-radius: 8px; margin-bottom: 4px; }
   .today-pick-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
   .today-pick-name { flex: 1; font-size: 13px; color: var(--text); }
   .today-pick-name.is-done { text-decoration: line-through; color: var(--muted); }
-  .today-pick-tag { font-family: var(--mono); font-size: 10px; color: var(--muted); letter-spacing: 0.04em; flex-shrink: 0; }
   .today-cb { width: 15px; height: 15px; border: 1.5px solid var(--border2); border-radius: 4px; cursor: pointer; flex-shrink: 0; display: flex; align-items: center; justify-content: center; transition: all 0.12s; }
   .today-cb:hover { border-color: var(--text); }
   .today-cb.done { background: var(--text); border-color: var(--text); }
@@ -242,17 +251,6 @@
   .t-del:hover { color: var(--text); }
   .t-empty { text-align: center; padding: 2.5rem 0; font-family: var(--mono); font-size: 12px; color: var(--muted); letter-spacing: 0.06em; }
 
-  /* ── Activity bar ── */
-  .activity-bar { display: flex; align-items: center; gap: 12px; margin-bottom: 1.5rem; padding: 0.75rem 1.25rem; background: var(--surface); border: 0.5px solid var(--border); border-radius: 10px; }
-  .act-label { font-family: var(--mono); font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); flex-shrink: 0; }
-  .act-btn { font-family: var(--mono); font-size: 11px; padding: 4px 12px; border-radius: 6px; border: 0.5px solid var(--border2); background: transparent; color: var(--muted); cursor: pointer; transition: all 0.15s; letter-spacing: 0.04em; white-space: nowrap; }
-  .act-btn:hover { color: var(--text); border-color: var(--text); }
-  .act-btn.act-done { background: rgba(42,122,75,0.1); border-color: rgba(42,122,75,0.3); color: var(--green); }
-  .act-streak { font-family: var(--mono); font-size: 12px; font-weight: 500; margin-left: auto; }
-  .streak-cold { color: var(--muted); }
-  .streak-warm { color: var(--amber); }
-  .streak-hot  { color: var(--red); }
-
   /* ── Today strip sun un-pin ── */
   .today-sun { background: none; border: none; cursor: pointer; font-size: 15px; padding: 1px 3px; line-height: 1; flex-shrink: 0; transition: transform 0.12s, opacity 0.12s; }
   .today-sun:hover { transform: scale(1.25); opacity: 0.6; }
@@ -268,11 +266,8 @@
   </span>
 </div>
 
-<!-- Activity bar -->
-<div class="activity-bar" id="activity-bar"></div>
-
-<!-- Today strip -->
-<div class="today-strip" id="today-strip" style="display:none">
+<!-- Today strip (always visible) -->
+<div class="today-strip" id="today-strip">
   <div class="today-hdr">
     <span class="today-title">Today</span>
     <button class="today-clear" onclick="clearToday()">clear all</button>
@@ -503,18 +498,9 @@ function getStreak() {
 function toggleActivity() {
   const t = todayStr();
   A.dates = actDoneToday() ? A.dates.filter(d => d !== t) : [...A.dates, t];
-  aPersist(); renderActivity();
+  aPersist(); renderToday();
 }
-function renderActivity() {
-  const el = document.getElementById('activity-bar');
-  if (!el) return;
-  const done = actDoneToday(), streak = getStreak();
-  const sc = streak >= 7 ? 'streak-hot' : streak >= 3 ? 'streak-warm' : 'streak-cold';
-  const streakTxt = streak > 0 ? `${streak}-day streak` : 'no streak yet';
-  el.innerHTML = `<span class="act-label">Activity</span>
-    <button class="act-btn${done?' act-done':''}" onclick="toggleActivity()">${done ? '✓ done today' : 'mark done today'}</button>
-    <span class="act-streak ${sc}">${streakTxt}</span>`;
-}
+function renderActivity() { renderToday(); }
 
 function isInToday(type, id) { return F.picks.some(p => p.type===type && String(p.id)===String(id)); }
 
@@ -548,28 +534,39 @@ function removePick(type, id) {
 function todayCheckTask(id) { tToggleDone(id); renderToday(); }
 
 function renderToday() {
-  const strip = document.getElementById('today-strip');
   const el = document.getElementById('today-picks');
-  strip.style.display = F.picks.length ? '' : 'none';
-  if (!F.picks.length) { el.innerHTML=''; return; }
-  const colorMap = { red:'var(--red)', amber:'var(--amber)', blue:'var(--blue)', green:'var(--green)', purple:'var(--purple)' };
-  el.innerHTML = F.picks.map(p => {
-    const task = p.type==='task' ? T.items.find(t => String(t.id)===String(p.id)) : null;
-    const isDone = task && task.done;
-    const dot = p.type==='project' ? (colorMap[p.color]||'var(--blue)') : 'var(--muted)';
-    const cb = p.type==='task'
-      ? `<div class="today-cb${isDone?' done':''}" data-task-id="${p.id}" title="Mark done"></div>`
-      : '';
-    return `<div class="today-pick" data-type="${p.type}" data-id="${String(p.id)}">
-      <div class="today-pick-dot" style="background:${dot}"></div>
-      <div class="today-pick-name${isDone?' is-done':''}">${p.name}</div>
-      ${cb}
-      <button class="today-sun" title="Remove from today">☀</button>
-    </div>`;
-  }).join('');
+  // Activity row (always first)
+  const done = actDoneToday(), streak = getStreak();
+  const sc = streak >= 7 ? 'streak-hot' : streak >= 3 ? 'streak-warm' : 'streak-cold';
+  const streakTxt = streak > 0 ? `${streak}-day streak` : 'no streak yet';
+  let html = `<div class="today-activity">
+    <div class="today-cb${done?' done':''}" data-activity="1" title="${done?'Undo':'Mark done'}"></div>
+    <div class="today-activity-name">Activity</div>
+    <span class="today-activity-streak ${sc}">${streakTxt}</span>
+  </div>`;
+  // Pinned items (with divider)
+  if (F.picks.length) {
+    html += `<div class="today-divider"></div>`;
+    const colorMap = { red:'var(--red)', amber:'var(--amber)', blue:'var(--blue)', green:'var(--green)', purple:'var(--purple)' };
+    html += F.picks.map(p => {
+      const task = p.type==='task' ? T.items.find(t => String(t.id)===String(p.id)) : null;
+      const isDone = task && task.done;
+      const dot = p.type==='project' ? (colorMap[p.color]||'var(--blue)') : 'var(--muted)';
+      const cb = p.type==='task'
+        ? `<div class="today-cb${isDone?' done':''}" data-task-id="${p.id}" title="Mark done"></div>`
+        : '';
+      return `<div class="today-pick" data-type="${p.type}" data-id="${String(p.id)}">
+        <div class="today-pick-dot" style="background:${dot}"></div>
+        <div class="today-pick-name${isDone?' is-done':''}">${p.name}</div>
+        ${cb}
+        <button class="today-sun" title="Remove from today">☀</button>
+      </div>`;
+    }).join('');
+  }
+  el.innerHTML = html;
 }
 
-// Event delegation for today-picks (sun un-pin + task checkbox)
+// Event delegation for today-picks (activity cb + sun un-pin + task checkbox)
 document.getElementById('today-picks').addEventListener('click', e => {
   const sun = e.target.closest('.today-sun');
   if (sun) {
@@ -579,6 +576,7 @@ document.getElementById('today-picks').addEventListener('click', e => {
   }
   const cb = e.target.closest('.today-cb');
   if (cb) {
+    if (cb.dataset.activity) { toggleActivity(); return; }
     const id = parseInt(cb.dataset.taskId);
     tToggleDone(id); renderToday();
   }
@@ -883,7 +881,6 @@ function tItemHtml(t, today) {
 (async () => {
   setSyncDot('syncing');
   await loadFromCloud();
-  renderActivity();
   renderToday();
   renderProjects();
   renderTasks();
