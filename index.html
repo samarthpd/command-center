@@ -241,6 +241,21 @@
   .t-del { background: none; border: none; cursor: pointer; color: var(--muted); font-size: 18px; line-height: 1; padding: 0; transition: color 0.12s; }
   .t-del:hover { color: var(--text); }
   .t-empty { text-align: center; padding: 2.5rem 0; font-family: var(--mono); font-size: 12px; color: var(--muted); letter-spacing: 0.06em; }
+
+  /* ── Activity bar ── */
+  .activity-bar { display: flex; align-items: center; gap: 12px; margin-bottom: 1.5rem; padding: 0.75rem 1.25rem; background: var(--surface); border: 0.5px solid var(--border); border-radius: 10px; }
+  .act-label { font-family: var(--mono); font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); flex-shrink: 0; }
+  .act-btn { font-family: var(--mono); font-size: 11px; padding: 4px 12px; border-radius: 6px; border: 0.5px solid var(--border2); background: transparent; color: var(--muted); cursor: pointer; transition: all 0.15s; letter-spacing: 0.04em; white-space: nowrap; }
+  .act-btn:hover { color: var(--text); border-color: var(--text); }
+  .act-btn.act-done { background: rgba(42,122,75,0.1); border-color: rgba(42,122,75,0.3); color: var(--green); }
+  .act-streak { font-family: var(--mono); font-size: 12px; font-weight: 500; margin-left: auto; }
+  .streak-cold { color: var(--muted); }
+  .streak-warm { color: var(--amber); }
+  .streak-hot  { color: var(--red); }
+
+  /* ── Today strip sun un-pin ── */
+  .today-sun { background: none; border: none; cursor: pointer; font-size: 15px; padding: 1px 3px; line-height: 1; flex-shrink: 0; transition: transform 0.12s, opacity 0.12s; }
+  .today-sun:hover { transform: scale(1.25); opacity: 0.6; }
 </style>
 </head>
 <body>
@@ -252,6 +267,9 @@
     <span class="sync-dot" id="sync-dot" title="Sync status"></span>
   </span>
 </div>
+
+<!-- Activity bar -->
+<div class="activity-bar" id="activity-bar"></div>
 
 <!-- Today strip -->
 <div class="today-strip" id="today-strip" style="display:none">
@@ -402,7 +420,7 @@ function scheduleSync() {
 async function pushState() {
   setSyncDot('syncing');
   try {
-    const state = { __cc_state: true, P, T, F, ts: Date.now() };
+    const state = { __cc_state: true, P, T, F, A, ts: Date.now() };
     const res = await fetch(`${WORKER}/tasks`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
@@ -423,6 +441,7 @@ async function loadFromCloud() {
     if (state.P) { P = state.P; if (!P.exams) P.exams = JSON.parse(JSON.stringify(DEFAULTS())); if (!P.checked) P.checked = {}; try { localStorage.setItem(PSK, JSON.stringify(P)); } catch(e) {} }
     if (state.T) { T = state.T; if (!T.items) T.items = []; if (!T.nextId) T.nextId = 1; try { localStorage.setItem(TSK, JSON.stringify(T)); } catch(e) {} }
     if (state.F) { F = state.F; if (F.date !== todayStr()) F = { date: todayStr(), picks: [] }; try { localStorage.setItem(FDSK, JSON.stringify(F)); } catch(e) {} }
+    if (state.A) { A = state.A; if (!A.dates) A.dates = []; try { localStorage.setItem(ASK, JSON.stringify(A)); } catch(e) {} }
     return true;
   } catch(e) { return false; }
 }
@@ -463,6 +482,39 @@ try {
   if (raw) F = JSON.parse(raw);
   if (F.date !== todayStr()) F = { date: todayStr(), picks: [] };
 } catch(e) { F = { date: todayStr(), picks: [] }; }
+
+// ─── Activity streak ───
+const ASK = 'cc_activity_v1';
+let A = { dates: [] };
+try {
+  const raw = localStorage.getItem(ASK);
+  if (raw) A = JSON.parse(raw);
+  if (!A.dates) A.dates = [];
+} catch(e) { A = { dates: [] }; }
+function aPersist() { try { localStorage.setItem(ASK, JSON.stringify(A)); } catch(e) {} scheduleSync(); }
+
+function actDoneToday() { return A.dates.includes(todayStr()); }
+function getStreak() {
+  const s = new Set(A.dates);
+  let n = 0, d = new Date(TODAY);
+  while (true) { const ds = d.toISOString().split('T')[0]; if (s.has(ds)) { n++; d.setDate(d.getDate()-1); } else break; }
+  return n;
+}
+function toggleActivity() {
+  const t = todayStr();
+  A.dates = actDoneToday() ? A.dates.filter(d => d !== t) : [...A.dates, t];
+  aPersist(); renderActivity();
+}
+function renderActivity() {
+  const el = document.getElementById('activity-bar');
+  if (!el) return;
+  const done = actDoneToday(), streak = getStreak();
+  const sc = streak >= 7 ? 'streak-hot' : streak >= 3 ? 'streak-warm' : 'streak-cold';
+  const streakTxt = streak > 0 ? `${streak}-day streak` : 'no streak yet';
+  el.innerHTML = `<span class="act-label">Activity</span>
+    <button class="act-btn${done?' act-done':''}" onclick="toggleActivity()">${done ? '✓ done today' : 'mark done today'}</button>
+    <span class="act-streak ${sc}">${streakTxt}</span>`;
+}
 
 function isInToday(type, id) { return F.picks.some(p => p.type===type && String(p.id)===String(id)); }
 
@@ -506,18 +558,31 @@ function renderToday() {
     const isDone = task && task.done;
     const dot = p.type==='project' ? (colorMap[p.color]||'var(--blue)') : 'var(--muted)';
     const cb = p.type==='task'
-      ? `<div class="today-cb${isDone?' done':''}" onclick="todayCheckTask(${p.id})" title="Mark done"></div>`
+      ? `<div class="today-cb${isDone?' done':''}" data-task-id="${p.id}" title="Mark done"></div>`
       : '';
-    const idJson = JSON.stringify(String(p.id));
-    return `<div class="today-pick">
+    return `<div class="today-pick" data-type="${p.type}" data-id="${String(p.id)}">
       <div class="today-pick-dot" style="background:${dot}"></div>
       <div class="today-pick-name${isDone?' is-done':''}">${p.name}</div>
-      <span class="today-pick-tag">${p.type}</span>
       ${cb}
-      <button class="today-rm" onclick="removePick('${p.type}',${idJson})">×</button>
+      <button class="today-sun" title="Remove from today">☀</button>
     </div>`;
   }).join('');
 }
+
+// Event delegation for today-picks (sun un-pin + task checkbox)
+document.getElementById('today-picks').addEventListener('click', e => {
+  const sun = e.target.closest('.today-sun');
+  if (sun) {
+    const pick = sun.closest('.today-pick');
+    if (pick) removePick(pick.dataset.type, pick.dataset.id);
+    return;
+  }
+  const cb = e.target.closest('.today-cb');
+  if (cb) {
+    const id = parseInt(cb.dataset.taskId);
+    tToggleDone(id); renderToday();
+  }
+});
 
 // ─── Projects rendering ───
 function circle(exam, pct) {
@@ -818,6 +883,7 @@ function tItemHtml(t, today) {
 (async () => {
   setSyncDot('syncing');
   await loadFromCloud();
+  renderActivity();
   renderToday();
   renderProjects();
   renderTasks();
