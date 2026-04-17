@@ -146,8 +146,6 @@
   .m-body { flex: 1; min-width: 0; }
   .m-text { font-size: 13px; color: var(--text); }
   .m-text.done { color: var(--muted); text-decoration: line-through; text-decoration-color: var(--faint); }
-  .m-date { font-family: var(--mono); font-size: 10px; color: var(--muted); }
-  .m-date.hot { color: var(--red); font-weight: 500; }
   .m-actions { opacity: 0; display: flex; gap: 4px; transition: opacity 0.15s; }
   .act { background: none; border: 0.5px solid var(--border2); border-radius: 5px; padding: 2px 8px; font-family: var(--mono); font-size: 10px; color: var(--muted); cursor: pointer; transition: all 0.12s; }
   .act:hover { color: var(--text); background: var(--faint); }
@@ -156,7 +154,6 @@
   .edit-row { display: flex; align-items: center; gap: 8px; padding: 0.5rem 1.5rem; background: #eef3fa; border-bottom: 0.5px solid var(--border); flex-wrap: wrap; }
   .edit-row input[type="text"] { flex: 1; min-width: 120px; background: #fff; border: 0.5px solid #a8c4e8; border-radius: 6px; padding: 5px 9px; font-family: var(--sans); font-size: 13px; color: var(--text); outline: none; }
   .edit-row input[type="text"]:focus { border-color: var(--blue); box-shadow: 0 0 0 2px rgba(26,95,168,0.12); }
-  .edit-row input[type="date"] { background: #fff; border: 0.5px solid #a8c4e8; border-radius: 6px; padding: 5px 8px; font-family: var(--mono); font-size: 11px; color: var(--text); outline: none; }
   .btn-save { background: var(--blue); border: none; border-radius: 6px; padding: 5px 14px; font-family: var(--mono); font-size: 10px; color: #fff; cursor: pointer; }
   .btn-save:hover { opacity: 0.85; }
   .btn-cancel { background: none; border: 0.5px solid var(--border2); border-radius: 6px; padding: 5px 10px; font-family: var(--mono); font-size: 10px; color: var(--muted); cursor: pointer; }
@@ -165,8 +162,6 @@
   .add-row input[type="text"] { flex: 1; min-width: 120px; background: var(--bg); border: 0.5px solid var(--border2); border-radius: 6px; padding: 5px 9px; font-family: var(--sans); font-size: 13px; color: var(--text); outline: none; }
   .add-row input[type="text"]::placeholder { color: var(--muted); }
   .add-row input[type="text"]:focus { border-color: var(--blue); background: #fff; }
-  .add-row input[type="date"] { background: var(--bg); border: 0.5px solid var(--border2); border-radius: 6px; padding: 5px 8px; font-family: var(--mono); font-size: 11px; color: var(--text); outline: none; }
-  .add-row input[type="date"]:focus { border-color: var(--blue); background: #fff; }
   .btn-add { background: none; border: 0.5px solid var(--border2); border-radius: 6px; padding: 5px 14px; font-family: var(--mono); font-size: 10px; color: var(--muted); cursor: pointer; white-space: nowrap; }
   .btn-add:hover { color: var(--blue); border-color: var(--blue); }
 
@@ -681,18 +676,17 @@ function renderProjects() {
       if (isEd) {
         const er = document.createElement('div');
         er.className = 'edit-row';
-        er.innerHTML = `<input type="text" id="ei-label" value="${m.label.replace(/"/g,'&quot;')}" /><input type="date" id="ei-due" value="${m.due}" /><button class="btn-save" id="ei-save">Save</button><button class="btn-cancel" id="ei-cancel">Cancel</button>`;
+        er.innerHTML = `<input type="text" id="ei-label" value="${m.label.replace(/"/g,'&quot;')}" /><button class="btn-save" id="ei-save">Save</button><button class="btn-cancel" id="ei-cancel">Cancel</button>`;
         msDiv.appendChild(er);
         setTimeout(()=>{ const el=er.querySelector('#ei-label'); if(el){el.focus();el.select();} },20);
         er.querySelector('#ei-save').onclick = () => doSave(exam.id, i);
         er.querySelector('#ei-cancel').onclick = () => { pEditing=null; renderProjects(); };
         er.querySelector('#ei-label').onkeydown = e => { if(e.key==='Enter') doSave(exam.id,i); if(e.key==='Escape'){pEditing=null;renderProjects();} };
       } else {
-        const md = daysTo(m.due), hot = md<=1 && !done;
         const row = document.createElement('div');
         row.className = 'ms-row';
         row.innerHTML = `<div class="cb cb-${exam.color} ${done?'done':''}" title="Toggle complete"><div class="ck"></div></div>
-          <div class="m-body"><div class="m-text ${done?'done':''}">${m.label}</div><div class="m-date ${hot?'hot':''}">${hot?'Due soon · ':''}${fmtDate(m.due)}</div></div>
+          <div class="m-body"><div class="m-text ${done?'done':''}">${m.label}</div></div>
           <div class="m-actions"><button class="act">edit</button><button class="act del">delete</button></div>`;
         row.querySelector('.cb').onclick = e => { e.stopPropagation(); P.checked[key]=!P.checked[key]; pPersist(); renderProjects(); };
         row.querySelectorAll('.act')[0].onclick = e => { e.stopPropagation(); pEditing={examId:exam.id,idx:i}; renderProjects(); };
@@ -703,7 +697,7 @@ function renderProjects() {
 
     const addRow = document.createElement('div');
     addRow.className = 'add-row';
-    addRow.innerHTML = `<input type="text" id="ai-label-${exam.id}" placeholder="Add a milestone…" /><input type="date" id="ai-due-${exam.id}" value="${exam.date}" /><button class="btn-add">+ add</button>`;
+    addRow.innerHTML = `<input type="text" id="ai-label-${exam.id}" placeholder="Add a milestone…" /><button class="btn-add">+ add</button>`;
     addRow.querySelector('.btn-add').onclick = () => doAdd(exam.id);
     addRow.querySelector('input[type="text"]').onkeydown = e => { if(e.key==='Enter') doAdd(exam.id); };
     msDiv.appendChild(addRow);
@@ -722,10 +716,10 @@ function renderProjects() {
 }
 
 function doSave(examId, idx) {
-  const label=(document.getElementById('ei-label').value||'').trim(), due=document.getElementById('ei-due').value;
+  const label=(document.getElementById('ei-label').value||'').trim();
   if(!label) return;
   const exam=P.exams.find(e=>e.id===examId);
-  if(exam){exam.milestones[idx]={label,due:due||exam.date};pPersist();}
+  if(exam){exam.milestones[idx]={label};pPersist();}
   pEditing=null; renderProjects();
 }
 function doDelete(examId, idx) {
@@ -741,10 +735,10 @@ function doDelete(examId, idx) {
   P.checked=nc; pPersist(); renderProjects();
 }
 function doAdd(examId) {
-  const lEl=document.getElementById('ai-label-'+examId), dEl=document.getElementById('ai-due-'+examId);
+  const lEl=document.getElementById('ai-label-'+examId);
   const label=(lEl.value||'').trim(); if(!label){lEl.focus();return;}
   const exam=P.exams.find(e=>e.id===examId);
-  if(exam){exam.milestones.push({label,due:dEl.value||exam.date});pPersist();renderProjects();}
+  if(exam){exam.milestones.push({label});pPersist();renderProjects();}
 }
 function doSaveProject(id) {
   const name = (document.getElementById('pe-name').value||'').trim();
