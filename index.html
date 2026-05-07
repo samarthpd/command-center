@@ -147,6 +147,8 @@
   .cb.done .ck { display: block; }
   .m-body { flex: 1; min-width: 0; }
   .m-text { font-size: 13px; color: var(--text); }
+  .m-text:not(.done) { cursor: pointer; }
+  .m-text:not(.done):hover { color: var(--blue); }
   .m-text.done { color: var(--muted); text-decoration: line-through; text-decoration-color: var(--faint); }
   .m-actions { opacity: 0; display: flex; gap: 4px; transition: opacity 0.15s; }
   .act { background: none; border: 0.5px solid var(--border2); border-radius: 5px; padding: 2px 8px; font-family: var(--mono); font-size: 10px; color: var(--muted); cursor: pointer; transition: all 0.12s; }
@@ -225,7 +227,10 @@
   .t-cb-sched { width: 16px; height: 16px; border: 1.5px dashed rgba(26,95,168,0.4); border-radius: 4px; flex-shrink: 0; margin-top: 1px; }
   .t-body { flex: 1; min-width: 0; }
   .t-text { font-size: 13px; line-height: 1.5; color: var(--text); }
+  .t-item:not(.t-done) .t-text { cursor: pointer; }
+  .t-item:not(.t-done) .t-text:hover { color: var(--blue); }
   .t-done .t-text { text-decoration: line-through; color: var(--muted); }
+  .t-edit-input { font-size: 13px; line-height: 1.5; font-family: var(--sans); color: var(--text); background: transparent; border: none; border-bottom: 1.5px solid var(--blue); outline: none; width: 100%; padding: 0; }
   .t-meta { display: flex; gap: 6px; margin-top: 4px; flex-wrap: wrap; }
   .t-badge { font-family: var(--mono); font-size: 10px; letter-spacing: 0.06em; padding: 1px 7px; border-radius: 3px; text-transform: uppercase; }
   .t-badge-urg { background: rgba(192,57,43,0.12); color: var(--red); }
@@ -668,10 +673,10 @@ function renderProjects() {
         row.className = 'ms-row';
         row.innerHTML = `<div class="cb cb-${exam.color} ${done?'done':''}" title="Toggle complete"><div class="ck"></div></div>
           <div class="m-body"><div class="m-text ${done?'done':''}">${m.label}</div></div>
-          <div class="m-actions"><button class="act">edit</button><button class="act del">delete</button></div>`;
+          <div class="m-actions"><button class="act del">delete</button></div>`;
         row.querySelector('.cb').onclick = e => { e.stopPropagation(); P.checked[key]=!P.checked[key]; pPersist(); renderProjects(); };
-        row.querySelectorAll('.act')[0].onclick = e => { e.stopPropagation(); pEditing={examId:exam.id,idx:i}; renderProjects(); };
-        row.querySelectorAll('.act')[1].onclick = e => { e.stopPropagation(); doDelete(exam.id,i); };
+        if (!done) row.querySelector('.m-text').onclick = e => { e.stopPropagation(); pEditing={examId:exam.id,idx:i}; renderProjects(); };
+        row.querySelector('.act.del').onclick = e => { e.stopPropagation(); doDelete(exam.id,i); };
         msDiv.appendChild(row);
       }
     });
@@ -844,12 +849,49 @@ function tItemHtml(t, today) {
   if(!t.done) actions.push(`<input type="date" class="t-inline-date${t.surfaceDate?' has-date':''}" value="${t.surfaceDate||''}" onchange="tSetDate(${t.id},this.value)" title="Hide until this date" />`);
   if(!t.done) actions.push(`<button class="t-pin-btn${isInToday('task',t.id)?' pinned':''}" onclick="toggleTodayTask(${t.id})" title="Add to today's focus">☀</button>`);
   actions.push(`<button class="t-del" onclick="tRemove(${t.id})">×</button>`);
-  return `<div class="t-item${cls}">
+  return `<div class="t-item${cls}" data-id="${t.id}">
     <div class="t-cb-wrap">${cb}</div>
     <div class="t-body"><div class="t-text">${t.text}</div>${badges.length?`<div class="t-meta">${badges.join('')}</div>`:''}</div>
     <div class="t-actions">${actions.join('')}</div>
   </div>`;
 }
+
+// ─── Inline task name editing ───
+document.getElementById('t-list').addEventListener('click', e => {
+  const textEl = e.target.closest('.t-text');
+  if (!textEl) return;
+  const item = textEl.closest('.t-item[data-id]');
+  if (!item) return;
+  const id = parseInt(item.dataset.id);
+  const task = T.items.find(x => x.id === id);
+  if (!task || task.done) return;
+
+  const input = document.createElement('input');
+  input.type = 'text';
+  input.value = task.text;
+  input.className = 't-edit-input';
+  textEl.replaceWith(input);
+  input.focus(); input.select();
+
+  let saved = false;
+  function save() {
+    if (saved) return; saved = true;
+    const val = input.value.trim();
+    if (val && val !== task.text) {
+      task.text = val;
+      // Update name in Today picks if present
+      const pick = F.picks.find(p => p.type === 'task' && String(p.id) === String(id));
+      if (pick) { pick.name = val; fPersist(); renderToday(); }
+      tPersist();
+    }
+    renderTasks();
+  }
+  input.addEventListener('blur', save);
+  input.addEventListener('keydown', e => {
+    if (e.key === 'Enter') { input.blur(); }
+    if (e.key === 'Escape') { saved = true; renderTasks(); } // cancel without saving
+  });
+});
 
 // ─── Weekly done-task purge ───
 function maybeCleanDone() {
