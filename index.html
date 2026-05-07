@@ -43,9 +43,14 @@
   /* ── Today strip (always visible) ── */
   .today-strip { margin-bottom: 0; background: var(--bg); padding-top: 0.75rem; padding-bottom: 0.75rem; border-bottom: 0.5px solid var(--border); flex-shrink: 0; }
   .today-hdr { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
-  .today-title { font-family: var(--mono); font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text); }
+  .today-tabs { display: flex; gap: 14px; align-items: center; }
+  .today-tab { font-family: var(--mono); font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); background: none; border: none; cursor: pointer; padding: 0; transition: color 0.15s; }
+  .today-tab.active { color: var(--text); text-decoration: underline; text-underline-offset: 3px; }
   .today-clear { font-family: var(--mono); font-size: 10px; color: var(--muted); background: none; border: none; cursor: pointer; letter-spacing: 0.04em; padding: 0; }
   .today-clear:hover { color: var(--red); }
+  .today-empty { font-family: var(--mono); font-size: 11px; color: var(--muted); padding: 12px 14px; letter-spacing: 0.04em; }
+  .today-undo { background: none; border: none; cursor: pointer; color: var(--muted); font-size: 14px; line-height: 1; padding: 0 2px; transition: color 0.12s; flex-shrink: 0; }
+  .today-undo:hover { color: var(--text); }
   /* Activity row */
   .today-activity { display: flex; align-items: center; gap: 10px; padding: 9px 14px; background: var(--surface); border: 0.5px solid var(--border); border-radius: 8px; margin-bottom: 4px; }
   .today-activity-name { flex: 1; font-size: 13px; color: var(--text); }
@@ -276,7 +281,10 @@
 <!-- Today strip (always visible) -->
 <div class="today-strip" id="today-strip">
   <div class="today-hdr">
-    <span class="today-title">Today</span>
+    <div class="today-tabs">
+      <button class="today-tab active" id="tab-today" onclick="setTodayView('active')">Today</button>
+      <button class="today-tab" id="tab-done" onclick="setTodayView('done')">Done</button>
+    </div>
     <button class="today-clear" onclick="clearToday()">clear all</button>
   </div>
   <div id="today-picks"></div>
@@ -434,7 +442,7 @@ async function loadFromCloud() {
     if (!state) { await pushState(); return false; } // cloud empty — push local state up
     if (state.P) { P = state.P; if (!P.exams) P.exams = JSON.parse(JSON.stringify(DEFAULTS())); if (!P.checked) P.checked = {}; backfillMilestoneIds(); try { localStorage.setItem(PSK, JSON.stringify(P)); } catch(e) {} }
     if (state.T) { T = state.T; if (!T.items) T.items = []; if (!T.nextId) T.nextId = 1; try { localStorage.setItem(TSK, JSON.stringify(T)); } catch(e) {} }
-    if (state.F) { F = state.F; if (!F.picks) F.picks = []; try { localStorage.setItem(FDSK, JSON.stringify(F)); } catch(e) {} }
+    if (state.F) { F = state.F; if (!F.picks) F.picks = []; if (!F.cleared) F.cleared = []; try { localStorage.setItem(FDSK, JSON.stringify(F)); } catch(e) {} }
     if (state.A) { A = state.A; if (!A.dates) A.dates = []; try { localStorage.setItem(ASK, JSON.stringify(A)); } catch(e) {} }
     return true;
   } catch(e) { return false; }
@@ -462,12 +470,14 @@ function DEFAULTS() {
 
 // ─── Today focus ───
 const FDSK = 'cc_focus_v1';
-let F = { picks: [] };
+let F = { picks: [], cleared: [] };
+let todayView = 'active';
 try {
   const raw = localStorage.getItem(FDSK);
   if (raw) F = JSON.parse(raw);
   if (!F.picks) F.picks = [];
-} catch(e) { F = { picks: [] }; }
+  if (!F.cleared) F.cleared = [];
+} catch(e) { F = { picks: [], cleared: [] }; }
 
 // ─── Activity streak ───
 const ASK = 'cc_activity_v1';
@@ -525,14 +535,53 @@ function toggleTodayTask(id) {
   fPersist(); renderToday(); renderProjects(); renderTasks();
 }
 
-function clearToday() { F.picks=[]; fPersist(); renderToday(); renderProjects(); renderTasks(); }
+function setTodayView(view) {
+  todayView = view;
+  document.getElementById('tab-today').classList.toggle('active', view === 'active');
+  document.getElementById('tab-done').classList.toggle('active', view === 'done');
+  renderToday();
+}
+
+function clearToday() {
+  if (todayView === 'done') { F.cleared = []; }
+  else { F.picks = []; }
+  fPersist(); renderToday(); renderProjects(); renderTasks();
+}
 
 function removePick(type, id) {
   F.picks = F.picks.filter(p => !(p.type===type && String(p.id)===String(id)));
   fPersist(); renderToday(); renderProjects(); renderTasks();
 }
 
-function todayCheckTask(id) { tToggleDone(id); renderToday(); }
+function moveToCleared(type, id) {
+  const pick = F.picks.find(p => p.type===type && String(p.id)===String(id));
+  if (!pick) return;
+  F.picks = F.picks.filter(p => !(p.type===type && String(p.id)===String(id)));
+  F.cleared.push(pick);
+  fPersist();
+}
+
+function undoCleared(type, id) {
+  const item = F.cleared.find(p => p.type===type && String(p.id)===String(id));
+  if (!item) return;
+  F.cleared = F.cleared.filter(p => !(p.type===type && String(p.id)===String(id)));
+  F.picks.push(item);
+  fPersist(); renderToday(); renderProjects(); renderTasks();
+}
+
+function todayCheckMilestone(milestoneId) {
+  for (const exam of P.exams) {
+    const idx = exam.milestones.findIndex(m => m.id === milestoneId);
+    if (idx >= 0) {
+      const key = exam.id + '_' + idx;
+      P.checked[key] = !P.checked[key];
+      if (P.checked[key]) moveToCleared('milestone', milestoneId);
+      else { F.cleared = F.cleared.filter(p => !(p.type==='milestone' && p.id===milestoneId)); fPersist(); }
+      pPersist(); renderProjects(); renderToday();
+      return;
+    }
+  }
+}
 
 function renderToday() {
   // Prune picks for items that no longer exist
@@ -540,12 +589,32 @@ function renderToday() {
   F.picks = F.picks.filter(p => {
     if (p.type === 'task') return T.items.some(t => String(t.id) === String(p.id));
     if (p.type === 'milestone') return P.exams.some(e => e.milestones.some(m => m.id === p.id));
-    return true; // projects
+    return true;
   });
   if (F.picks.length !== before) fPersist();
 
   const el = document.getElementById('today-picks');
-  // Activity row (always first)
+  const colorMap = { red:'var(--red)', amber:'var(--amber)', blue:'var(--blue)', green:'var(--green)', purple:'var(--purple)' };
+
+  // ── DONE view ──
+  if (todayView === 'done') {
+    if (!F.cleared.length) {
+      el.innerHTML = `<div class="today-empty">nothing cleared yet</div>`;
+      return;
+    }
+    el.innerHTML = F.cleared.map(p => {
+      const dot = colorMap[p.color] || 'var(--muted)';
+      const label = p.type === 'milestone' ? `${p.projectName} → ${p.name}` : p.name;
+      return `<div class="today-pick" data-type="${p.type}" data-id="${String(p.id)}">
+        <div class="today-pick-dot" style="background:${dot}; opacity:0.35"></div>
+        <div class="today-pick-name is-done">${label}</div>
+        <button class="today-undo" data-type="${p.type}" data-id="${String(p.id)}" title="Move back to Today">↩</button>
+      </div>`;
+    }).join('');
+    return;
+  }
+
+  // ── ACTIVE view ──
   const done = actDoneToday(), streak = getStreak();
   const sc = streak >= 7 ? 'streak-hot' : streak >= 3 ? 'streak-warm' : 'streak-cold';
   const streakTxt = streak > 0 ? `${streak}-day streak` : 'no streak yet';
@@ -554,28 +623,26 @@ function renderToday() {
     <div class="today-activity-name">Activity</div>
     <span class="today-activity-streak ${sc}">${streakTxt}</span>
   </div>`;
-  // Pinned items (with divider)
   if (F.picks.length) {
     html += `<div class="today-divider"></div>`;
-    const colorMap = { red:'var(--red)', amber:'var(--amber)', blue:'var(--blue)', green:'var(--green)', purple:'var(--purple)' };
     html += F.picks.map(p => {
       const dot = colorMap[p.color] || 'var(--muted)';
       if (p.type === 'milestone') {
         return `<div class="today-pick" data-type="${p.type}" data-id="${String(p.id)}">
           <div class="today-pick-dot" style="background:${dot}"></div>
           <div class="today-pick-name">${p.projectName} → ${p.name}</div>
+          <div class="today-cb" data-milestone-id="${p.id}" title="Mark done"></div>
           <button class="today-sun" title="Remove from today">☀</button>
         </div>`;
       }
       const task = p.type==='task' ? T.items.find(t => String(t.id)===String(p.id)) : null;
-      const isDone = task && task.done;
       const taskDot = p.type==='project' ? dot : 'var(--muted)';
       const cb = p.type==='task'
-        ? `<div class="today-cb${isDone?' done':''}" data-task-id="${p.id}" title="Mark done"></div>`
+        ? `<div class="today-cb" data-task-id="${p.id}" title="Mark done"></div>`
         : '';
       return `<div class="today-pick" data-type="${p.type}" data-id="${String(p.id)}">
         <div class="today-pick-dot" style="background:${taskDot}"></div>
-        <div class="today-pick-name${isDone?' is-done':''}">${p.name}</div>
+        <div class="today-pick-name">${p.name}</div>
         ${cb}
         <button class="today-sun" title="Remove from today">☀</button>
       </div>`;
@@ -584,22 +651,27 @@ function renderToday() {
   el.innerHTML = html;
 }
 
-// Event delegation for today-picks (activity cb + sun un-pin + task checkbox)
+// Event delegation for today-picks
 document.getElementById('today-picks').addEventListener('click', e => {
+  // Undo button (Done view)
+  const undo = e.target.closest('.today-undo');
+  if (undo) { undoCleared(undo.dataset.type, undo.dataset.id); return; }
+
+  // Sun un-pin (Active view)
   const sun = e.target.closest('.today-sun');
   if (sun) {
     const pick = sun.closest('.today-pick');
     if (pick) removePick(pick.dataset.type, pick.dataset.id);
     return;
   }
+
+  // Checkboxes
   const cb = e.target.closest('.today-cb');
   if (cb) {
     if (cb.dataset.activity) { toggleActivity(); return; }
+    if (cb.dataset.milestoneId) { todayCheckMilestone(cb.dataset.milestoneId); return; }
     const id = parseInt(cb.dataset.taskId);
-    tToggleDone(id);
-    const t = T.items.find(x => x.id === id);
-    if (t && t.done) removePick('task', id); // removes from Today + re-renders
-    else renderToday();
+    tToggleDone(id); // handles move-to-cleared + renderToday internally
   }
 });
 
@@ -850,7 +922,16 @@ function tAdd() {
 }
 document.getElementById('t-new-text').addEventListener('keydown', e=>{ if(e.key==='Enter') tAdd(); });
 
-function tToggleDone(id) { const t=T.items.find(x=>x.id===id); if(t){t.done=!t.done;tPersist();renderTasks();} }
+function tToggleDone(id) {
+  const t = T.items.find(x => x.id === id);
+  if (!t) return;
+  t.done = !t.done;
+  tPersist();
+  if (t.done && isInToday('task', id)) moveToCleared('task', id);
+  else if (!t.done) { F.cleared = F.cleared.filter(p => !(p.type==='task' && String(p.id)===String(id))); fPersist(); }
+  renderTasks();
+  renderToday();
+}
 function tToggleUrgentItem(id) { const t=T.items.find(x=>x.id===id); if(t){t.urgent=!t.urgent;tPersist();renderTasks();} }
 function tSetDate(id,val) { const t=T.items.find(x=>x.id===id); if(t){t.surfaceDate=val||null;tPersist();renderTasks();} }
 function tRemove(id) {
