@@ -186,12 +186,7 @@
   .btn-create-project:hover { opacity: 0.85; }
   .btn-cancel-project { background: none; border: 0.5px solid var(--border2); border-radius: 6px; padding: 7px 12px; font-family: var(--mono); font-size: 10px; color: var(--muted); cursor: pointer; }
 
-  /* ── Tasks tab ── */
-  .tasks-stats { display: flex; gap: 24px; margin-bottom: 1.5rem; padding-bottom: 1.25rem; border-bottom: 0.5px solid var(--border); }
-  .t-stat { text-align: left; }
-  .t-stat-num { font-family: var(--mono); font-size: 26px; font-weight: 500; color: var(--text); line-height: 1; }
-  .t-stat-lbl { font-size: 10px; color: var(--muted); margin-top: 3px; letter-spacing: 0.08em; text-transform: uppercase; font-family: var(--mono); }
-  .t-stat-div { width: 0.5px; background: var(--border); align-self: stretch; }
+  /* ── Tasks panel ── */
 
   .t-add-row { display: flex; gap: 8px; margin-bottom: 8px; }
   .t-add-row input[type="text"] { flex: 1; height: 40px; padding: 0 14px; border: 0.5px solid var(--border2); border-radius: 8px; background: var(--surface); font-family: var(--sans); font-size: 13px; color: var(--text); outline: none; transition: border-color 0.15s; }
@@ -201,10 +196,9 @@
   .t-add-btn:hover { opacity: 0.8; }
 
   .t-add-opts { display: flex; gap: 8px; margin-bottom: 1.5rem; align-items: center; flex-wrap: wrap; }
-  .urg-toggle { height: 32px; padding: 0 12px; border: 0.5px solid var(--border2); border-radius: 6px; background: var(--surface); font-family: var(--mono); font-size: 11px; color: var(--muted); cursor: pointer; letter-spacing: 0.05em; display: flex; align-items: center; gap: 6px; transition: all 0.15s; }
-  .urg-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--muted); transition: background 0.15s; }
-  .urg-toggle.on { background: rgba(192,57,43,0.08); border-color: rgba(192,57,43,0.4); color: var(--red); }
-  .urg-toggle.on .urg-dot { background: var(--red); }
+  .urg-toggle { background: none; border: none; cursor: pointer; font-family: var(--mono); font-size: 14px; font-weight: 700; color: var(--muted); padding: 2px 6px; line-height: 1; border-radius: 4px; transition: color 0.12s, transform 0.12s; filter: opacity(0.5); }
+  .urg-toggle:hover { color: var(--red); filter: none; transform: scale(1.15); }
+  .urg-toggle.on { color: var(--red); filter: none; }
   .t-date-wrap { display: flex; align-items: center; gap: 6px; }
   .t-date-lbl { font-family: var(--mono); font-size: 11px; color: var(--muted); white-space: nowrap; }
   .t-date-wrap input[type="date"] { height: 32px; padding: 0 8px; border: 0.5px solid var(--border2); border-radius: 6px; background: var(--surface); font-family: var(--mono); font-size: 11px; color: var(--text); outline: none; }
@@ -237,9 +231,9 @@
   .t-badge-urg { background: rgba(192,57,43,0.12); color: var(--red); }
   .t-badge-sched { background: rgba(26,95,168,0.1); color: var(--blue); }
   .t-actions { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
-  .t-urg-btn { background: none; border: 0.5px solid var(--border); border-radius: 4px; cursor: pointer; font-family: var(--mono); font-size: 10px; letter-spacing: 0.04em; color: var(--muted); padding: 2px 7px; transition: all 0.12s; white-space: nowrap; }
-  .t-urg-btn:hover { border-color: rgba(192,57,43,0.4); color: var(--red); background: rgba(192,57,43,0.06); }
-  .t-urg-btn.on { border-color: rgba(192,57,43,0.4); color: var(--red); background: rgba(192,57,43,0.1); }
+  .t-urg-btn { background: none; border: none; cursor: pointer; font-family: var(--mono); font-size: 13px; font-weight: 700; color: var(--muted); padding: 2px 4px; line-height: 1; transition: color 0.12s, transform 0.12s; filter: opacity(0.4); }
+  .t-urg-btn:hover { color: var(--red); filter: none; transform: scale(1.15); }
+  .t-urg-btn.on { color: var(--red); filter: none; }
   .t-inline-date { height: 24px; padding: 0 7px; border: 0.5px solid var(--border); border-radius: 4px; background: var(--surface); font-family: var(--mono); font-size: 10px; color: var(--muted); outline: none; cursor: pointer; transition: border-color 0.12s; }
   .t-inline-date:hover { border-color: rgba(26,95,168,0.3); }
   .t-inline-date:focus { border-color: var(--blue); color: var(--blue); }
@@ -276,24 +270,12 @@
 
 <!-- ── TASKS PANEL (left) ── -->
 <div class="panel panel-tasks" id="pane-tasks">
-  <div class="tasks-stats">
-    <div class="t-stat"><div class="t-stat-num" id="ts-open">0</div><div class="t-stat-lbl">open</div></div>
-    <div class="t-stat-div"></div>
-    <div class="t-stat"><div class="t-stat-num" id="ts-urgent">0</div><div class="t-stat-lbl">urgent</div></div>
-    <div class="t-stat-div"></div>
-    <div class="t-stat"><div class="t-stat-num" id="ts-sched">0</div><div class="t-stat-lbl">scheduled</div></div>
-    <div class="t-stat-div"></div>
-    <div class="t-stat"><div class="t-stat-num" id="ts-done">0</div><div class="t-stat-lbl">done</div></div>
-  </div>
-
   <div class="t-add-row">
     <input type="text" id="t-new-text" placeholder="Add a task…" />
     <button class="t-add-btn" onclick="tAdd()">add</button>
   </div>
   <div class="t-add-opts">
-    <button class="urg-toggle" id="urg-toggle" onclick="tToggleUrgent()">
-      <span class="urg-dot"></span>urgent
-    </button>
+    <button class="urg-toggle" id="urg-toggle" onclick="tToggleUrgent()" title="Mark urgent">!</button>
     <div class="t-date-wrap">
       <span class="t-date-lbl">surface on</span>
       <input type="date" id="t-new-date" />
@@ -814,12 +796,6 @@ function renderTasks() {
   else if(tFilter==='scheduled') items=T.items.filter(t=>!t.done&&t.surfaceDate&&t.surfaceDate>today);
   else items=T.items.filter(t=>t.done);
 
-  const activeOpen=T.items.filter(t=>!t.done&&isActive(t));
-  document.getElementById('ts-open').textContent=activeOpen.length;
-  document.getElementById('ts-urgent').textContent=activeOpen.filter(t=>t.urgent).length;
-  document.getElementById('ts-sched').textContent=T.items.filter(t=>!t.done&&t.surfaceDate&&t.surfaceDate>today).length;
-  document.getElementById('ts-done').textContent=T.items.filter(t=>t.done).length;
-
   const emptyMsgs={today:'nothing active today',all:'no open tasks',urgent:'nothing urgent',scheduled:'no scheduled tasks',done:'nothing done yet'};
   if(!items.length){document.getElementById('t-list').innerHTML=`<div class="t-empty">${emptyMsgs[tFilter]||'nothing here'}</div>`;return;}
 
@@ -849,7 +825,7 @@ function tItemHtml(t, today) {
   if(t.urgent&&!t.done&&!isSched) badges.push(`<span class="t-badge t-badge-urg">urgent</span>`);
   if(isSched&&tFilter!=='scheduled') badges.push(`<span class="t-badge t-badge-sched">surfaces ${fmtDate(t.surfaceDate)}</span>`);
   const actions=[];
-  if(!t.done&&!isSched) actions.push(`<button class="t-urg-btn${t.urgent?' on':''}" onclick="tToggleUrgentItem(${t.id})">! urgent</button>`);
+  if(!t.done&&!isSched) actions.push(`<button class="t-urg-btn${t.urgent?' on':''}" onclick="tToggleUrgentItem(${t.id})" title="Toggle urgent">!</button>`);
   if(!t.done) actions.push(`<input type="date" class="t-inline-date${t.surfaceDate?' has-date':''}" value="${t.surfaceDate||''}" onchange="tSetDate(${t.id},this.value)" title="Hide until this date" />`);
   if(!t.done) actions.push(`<button class="t-pin-btn${isInToday('task',t.id)?' pinned':''}" onclick="toggleTodayTask(${t.id})" title="Add to today's focus">☀</button>`);
   actions.push(`<button class="t-del" onclick="tRemove(${t.id})">×</button>`);
