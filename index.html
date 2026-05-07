@@ -169,8 +169,9 @@
   .btn-add { background: none; border: 0.5px solid var(--border2); border-radius: 6px; padding: 5px 14px; font-family: var(--mono); font-size: 10px; color: var(--muted); cursor: pointer; white-space: nowrap; }
   .btn-add:hover { color: var(--blue); border-color: var(--blue); }
 
-  .add-project-wrap { margin-top: 0.5rem; }
-  .btn-show-add-project { display: block; width: 100%; background: none; border: 0.5px dashed var(--border2); border-radius: 12px; padding: 0.9rem; font-family: var(--mono); font-size: 11px; color: var(--muted); cursor: pointer; letter-spacing: 0.04em; transition: all 0.15s; }
+  .add-project-wrap { margin-bottom: 1.25rem; }
+  .add-project-top { display: flex; justify-content: flex-end; }
+  .btn-show-add-project { background: none; border: 0.5px solid var(--border2); border-radius: 6px; padding: 4px 10px; font-family: var(--mono); font-size: 10px; color: var(--muted); cursor: pointer; letter-spacing: 0.06em; transition: all 0.15s; }
   .btn-show-add-project:hover { color: var(--blue); border-color: var(--blue); background: var(--blue-bg); }
   .add-project-form { background: var(--surface); border: 0.5px solid var(--border2); border-radius: 12px; padding: 1.25rem 1.5rem; display: none; flex-direction: column; gap: 0.85rem; }
   .add-project-form.open { display: flex; }
@@ -302,25 +303,10 @@
 <!-- ── PROJECTS PANEL (right) ── -->
 <div class="panel panel-projects" id="pane-projects">
 
-  <div class="summary-row">
-    <div class="summary-cell">
-      <div class="lbl">Projects</div>
-      <div class="val" id="s-count">0</div>
+  <div class="add-project-wrap" id="add-project-wrap-top">
+    <div class="add-project-top">
+      <button class="btn-show-add-project" id="btn-show-add-project">+ add project</button>
     </div>
-    <div class="summary-cell">
-      <div class="lbl">Next deadline</div>
-      <div class="val" id="s-next" style="font-size:14px;padding-top:3px;"></div>
-    </div>
-    <div class="circles-cell">
-      <div class="lbl">Progress by project</div>
-      <div class="circles-row" id="circles-row"></div>
-    </div>
-  </div>
-
-  <div id="cards"></div>
-
-  <div class="add-project-wrap">
-    <button class="btn-show-add-project" id="btn-show-add-project">+ Add Project</button>
     <div class="add-project-form" id="add-project-form">
       <div>
         <label>Project name</label>
@@ -346,6 +332,24 @@
       </div>
     </div>
   </div>
+
+  <div class="summary-row">
+    <div class="summary-cell">
+      <div class="lbl">Projects</div>
+      <div class="val" id="s-count">0</div>
+    </div>
+    <div class="summary-cell">
+      <div class="lbl">Next deadline</div>
+      <div class="val" id="s-next" style="font-size:14px;padding-top:3px;"></div>
+    </div>
+    <div class="circles-cell">
+      <div class="lbl">Progress by project</div>
+      <div class="circles-row" id="circles-row"></div>
+    </div>
+  </div>
+
+  <div id="cards"></div>
+
 </div>
 
 </div><!-- end panels-row -->
