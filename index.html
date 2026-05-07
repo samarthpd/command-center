@@ -554,19 +554,22 @@ function removePick(type, id) {
 }
 
 function moveToCleared(type, id) {
-  const pick = F.picks.find(p => p.type===type && String(p.id)===String(id));
-  if (!pick) return;
-  F.picks = F.picks.filter(p => !(p.type===type && String(p.id)===String(id)));
+  const idx = F.picks.findIndex(p => p.type===type && String(p.id)===String(id));
+  if (idx < 0) return;
+  const [pick] = F.picks.splice(idx, 1);
+  if (!F.cleared) F.cleared = [];
   F.cleared.push(pick);
   fPersist();
 }
 
 function undoCleared(type, id) {
-  const item = F.cleared.find(p => p.type===type && String(p.id)===String(id));
-  if (!item) return;
-  F.cleared = F.cleared.filter(p => !(p.type===type && String(p.id)===String(id)));
+  const ci = F.cleared.findIndex(p => p.type===type && String(p.id)===String(id));
+  if (ci < 0) return;
+  const [item] = F.cleared.splice(ci, 1);
   F.picks.push(item);
-  fPersist(); renderToday(); renderProjects(); renderTasks();
+  fPersist();
+  setTodayView('active');
+  renderProjects(); renderTasks();
 }
 
 function todayCheckMilestone(milestoneId) {
@@ -575,8 +578,18 @@ function todayCheckMilestone(milestoneId) {
     if (idx >= 0) {
       const key = exam.id + '_' + idx;
       P.checked[key] = !P.checked[key];
-      if (P.checked[key]) moveToCleared('milestone', milestoneId);
-      else { F.cleared = F.cleared.filter(p => !(p.type==='milestone' && p.id===milestoneId)); fPersist(); }
+      if (P.checked[key]) {
+        const pi = F.picks.findIndex(p => p.type==='milestone' && String(p.id)===String(milestoneId));
+        if (pi >= 0) {
+          const [pick] = F.picks.splice(pi, 1);
+          if (!F.cleared) F.cleared = [];
+          F.cleared.push(pick);
+          fPersist();
+        }
+      } else {
+        const ci = F.cleared.findIndex(p => p.type==='milestone' && String(p.id)===String(milestoneId));
+        if (ci >= 0) { F.cleared.splice(ci, 1); fPersist(); }
+      }
       pPersist(); renderProjects(); renderToday();
       return;
     }
@@ -923,12 +936,22 @@ function tAdd() {
 document.getElementById('t-new-text').addEventListener('keydown', e=>{ if(e.key==='Enter') tAdd(); });
 
 function tToggleDone(id) {
-  const t = T.items.find(x => x.id === id);
+  const t = T.items.find(x => String(x.id) === String(id));
   if (!t) return;
   t.done = !t.done;
   tPersist();
-  if (t.done && isInToday('task', id)) moveToCleared('task', id);
-  else if (!t.done) { F.cleared = F.cleared.filter(p => !(p.type==='task' && String(p.id)===String(id))); fPersist(); }
+  if (t.done) {
+    const idx = F.picks.findIndex(p => p.type==='task' && String(p.id)===String(id));
+    if (idx >= 0) {
+      const [pick] = F.picks.splice(idx, 1);
+      if (!F.cleared) F.cleared = [];
+      F.cleared.push(pick);
+      fPersist();
+    }
+  } else {
+    const ci = F.cleared.findIndex(p => p.type==='task' && String(p.id)===String(id));
+    if (ci >= 0) { F.cleared.splice(ci, 1); fPersist(); }
+  }
   renderTasks();
   renderToday();
 }
@@ -936,10 +959,12 @@ function tToggleUrgentItem(id) { const t=T.items.find(x=>x.id===id); if(t){t.urg
 function tSetDate(id,val) { const t=T.items.find(x=>x.id===id); if(t){t.surfaceDate=val||null;tPersist();renderTasks();} }
 function tRemove(id) {
   T.items = T.items.filter(x => x.id !== id);
-  const before = F.picks.length;
+  const beforeP = F.picks.length;
   F.picks = F.picks.filter(p => !(p.type==='task' && String(p.id)===String(id)));
+  const beforeC = F.cleared.length;
+  F.cleared = F.cleared.filter(p => !(p.type==='task' && String(p.id)===String(id)));
   tPersist();
-  if (F.picks.length !== before) fPersist();
+  if (F.picks.length !== beforeP || F.cleared.length !== beforeC) fPersist();
   renderTasks(); renderToday();
 }
 
