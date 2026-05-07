@@ -27,11 +27,11 @@
     --sans: 'DM Sans', sans-serif;
   }
 
-  html { background: var(--bg); color: var(--text); font-family: var(--sans); font-size: 14px; line-height: 1.6; }
-  body { max-width: 780px; margin: 0 auto; padding: 2.5rem 2rem 5rem; }
+  html { background: var(--bg); color: var(--text); font-family: var(--sans); font-size: 14px; line-height: 1.6; height: 100%; }
+  body { max-width: 1100px; margin: 0 auto; padding: 1.5rem 2rem 0; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
 
   /* ── Header ── */
-  .top { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 1.75rem; border-bottom: 0.5px solid var(--border); padding-bottom: 1.25rem; }
+  .top { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 1.25rem; border-bottom: 0.5px solid var(--border); padding-bottom: 1.25rem; flex-shrink: 0; }
   .wordmark { font-family: var(--mono); font-size: 11px; letter-spacing: 0.12em; color: var(--muted); text-transform: uppercase; }
   .datestamp { font-family: var(--mono); font-size: 11px; color: var(--muted); }
   .sync-dot { width: 6px; height: 6px; border-radius: 50%; display: inline-block; margin-left: 7px; vertical-align: middle; transition: background 0.3s; }
@@ -40,8 +40,8 @@
   .sync-dot.error   { background: var(--red); }
   @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.25} }
 
-  /* ── Today strip (always visible, sticky) ── */
-  .today-strip { margin-bottom: 1.5rem; position: sticky; top: 0; z-index: 50; background: var(--bg); padding-top: 0.75rem; padding-bottom: 0.75rem; border-bottom: 0.5px solid var(--border); }
+  /* ── Today strip (always visible) ── */
+  .today-strip { margin-bottom: 0; background: var(--bg); padding-top: 0.75rem; padding-bottom: 0.75rem; border-bottom: 0.5px solid var(--border); flex-shrink: 0; }
   .today-hdr { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
   .today-title { font-family: var(--mono); font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text); }
   .today-clear { font-family: var(--mono); font-size: 10px; color: var(--muted); background: none; border: none; cursor: pointer; letter-spacing: 0.04em; padding: 0; }
@@ -75,16 +75,18 @@
   .t-pin-btn:hover { filter: none; }
   .t-pin-btn.pinned { filter: none; }
 
-  /* ── Tabs ── */
-  .tabs { display: flex; gap: 0; margin-bottom: 1.75rem; border-bottom: 0.5px solid var(--border); }
-  .tab-btn { background: none; border: none; border-bottom: 2px solid transparent; padding: 0.5rem 1rem 0.6rem; font-family: var(--mono); font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); cursor: pointer; transition: color 0.15s, border-color 0.15s; margin-bottom: -0.5px; }
-  .tab-btn:hover { color: var(--text); }
-  .tab-btn.active { color: var(--text); border-bottom-color: var(--text); }
-  .tab-pane { display: none; }
-  .tab-pane.active { display: block; }
+  /* ── Panels layout ── */
+  .panels-row { display: flex; gap: 0; flex: 1; min-height: 0; overflow: hidden; }
+  .panel { flex: 1; overflow-y: auto; padding: 1.5rem 0 3rem; min-width: 0; }
+  .panel-tasks { border-right: 0.5px solid var(--border); padding-right: 2rem; }
+  .panel-projects { padding-left: 2rem; }
+  @media (max-width: 640px) {
+    body { height: auto; overflow: auto; }
+    .panels-row { flex-direction: column; overflow: visible; }
+    .panel { overflow-y: visible; border: none !important; padding: 1rem 0; }
+  }
 
-  /* ── Projects tab ── */
-  .subtitle { font-size: 13px; color: var(--muted); margin-bottom: 2rem; min-height: 1.2em; }
+  /* ── Projects panel ── */
 
   .summary-row { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1px; background: var(--border); border: 0.5px solid var(--border); border-radius: 10px; overflow: hidden; margin-bottom: 2rem; }
   .summary-cell { background: var(--surface); padding: 1rem 1.25rem; }
@@ -270,15 +272,48 @@
   <div id="today-picks"></div>
 </div>
 
-<!-- Tabs -->
-<div class="tabs">
-  <button class="tab-btn active" id="tab-projects" onclick="switchTab('projects')">Projects</button>
-  <button class="tab-btn" id="tab-tasks" onclick="switchTab('tasks')">Tasks</button>
+<div class="panels-row">
+
+<!-- ── TASKS PANEL (left) ── -->
+<div class="panel panel-tasks" id="pane-tasks">
+  <div class="tasks-stats">
+    <div class="t-stat"><div class="t-stat-num" id="ts-open">0</div><div class="t-stat-lbl">open</div></div>
+    <div class="t-stat-div"></div>
+    <div class="t-stat"><div class="t-stat-num" id="ts-urgent">0</div><div class="t-stat-lbl">urgent</div></div>
+    <div class="t-stat-div"></div>
+    <div class="t-stat"><div class="t-stat-num" id="ts-sched">0</div><div class="t-stat-lbl">scheduled</div></div>
+    <div class="t-stat-div"></div>
+    <div class="t-stat"><div class="t-stat-num" id="ts-done">0</div><div class="t-stat-lbl">done</div></div>
+  </div>
+
+  <div class="t-add-row">
+    <input type="text" id="t-new-text" placeholder="Add a task…" />
+    <button class="t-add-btn" onclick="tAdd()">add</button>
+  </div>
+  <div class="t-add-opts">
+    <button class="urg-toggle" id="urg-toggle" onclick="tToggleUrgent()">
+      <span class="urg-dot"></span>urgent
+    </button>
+    <div class="t-date-wrap">
+      <span class="t-date-lbl">surface on</span>
+      <input type="date" id="t-new-date" />
+      <button class="t-date-clear" onclick="document.getElementById('t-new-date').value=''">×</button>
+    </div>
+  </div>
+
+  <div class="t-filters">
+    <button class="t-filter active" onclick="tSetFilter('today',this)">today</button>
+    <button class="t-filter" onclick="tSetFilter('all',this)">all open</button>
+    <button class="t-filter" onclick="tSetFilter('urgent',this)">urgent</button>
+    <button class="t-filter" onclick="tSetFilter('scheduled',this)">scheduled</button>
+    <button class="t-filter" onclick="tSetFilter('done',this)">done</button>
+  </div>
+
+  <div id="t-list"></div>
 </div>
 
-<!-- ── PROJECTS TAB ── -->
-<div class="tab-pane active" id="pane-projects">
-  <p class="subtitle" id="next-up"></p>
+<!-- ── PROJECTS PANEL (right) ── -->
+<div class="panel panel-projects" id="pane-projects">
 
   <div class="summary-row">
     <div class="summary-cell">
@@ -326,43 +361,7 @@
   </div>
 </div>
 
-<!-- ── TASKS TAB ── -->
-<div class="tab-pane" id="pane-tasks">
-  <div class="tasks-stats">
-    <div class="t-stat"><div class="t-stat-num" id="ts-open">0</div><div class="t-stat-lbl">open</div></div>
-    <div class="t-stat-div"></div>
-    <div class="t-stat"><div class="t-stat-num" id="ts-urgent">0</div><div class="t-stat-lbl">urgent</div></div>
-    <div class="t-stat-div"></div>
-    <div class="t-stat"><div class="t-stat-num" id="ts-sched">0</div><div class="t-stat-lbl">scheduled</div></div>
-    <div class="t-stat-div"></div>
-    <div class="t-stat"><div class="t-stat-num" id="ts-done">0</div><div class="t-stat-lbl">done</div></div>
-  </div>
-
-  <div class="t-add-row">
-    <input type="text" id="t-new-text" placeholder="Add a task…" />
-    <button class="t-add-btn" onclick="tAdd()">add</button>
-  </div>
-  <div class="t-add-opts">
-    <button class="urg-toggle" id="urg-toggle" onclick="tToggleUrgent()">
-      <span class="urg-dot"></span>urgent
-    </button>
-    <div class="t-date-wrap">
-      <span class="t-date-lbl">surface on</span>
-      <input type="date" id="t-new-date" />
-      <button class="t-date-clear" onclick="document.getElementById('t-new-date').value=''">×</button>
-    </div>
-  </div>
-
-  <div class="t-filters">
-    <button class="t-filter active" onclick="tSetFilter('today',this)">today</button>
-    <button class="t-filter" onclick="tSetFilter('all',this)">all open</button>
-    <button class="t-filter" onclick="tSetFilter('urgent',this)">urgent</button>
-    <button class="t-filter" onclick="tSetFilter('scheduled',this)">scheduled</button>
-    <button class="t-filter" onclick="tSetFilter('done',this)">done</button>
-  </div>
-
-  <div id="t-list"></div>
-</div>
+</div><!-- end panels-row -->
 
 <script>
 
@@ -430,7 +429,7 @@ async function loadFromCloud() {
     if (!state) { await pushState(); return false; } // cloud empty — push local state up
     if (state.P) { P = state.P; if (!P.exams) P.exams = JSON.parse(JSON.stringify(DEFAULTS())); if (!P.checked) P.checked = {}; try { localStorage.setItem(PSK, JSON.stringify(P)); } catch(e) {} }
     if (state.T) { T = state.T; if (!T.items) T.items = []; if (!T.nextId) T.nextId = 1; try { localStorage.setItem(TSK, JSON.stringify(T)); } catch(e) {} }
-    if (state.F) { F = state.F; if (F.date !== todayStr()) F = { date: todayStr(), picks: [] }; try { localStorage.setItem(FDSK, JSON.stringify(F)); } catch(e) {} }
+    if (state.F) { F = state.F; if (!F.picks) F.picks = []; try { localStorage.setItem(FDSK, JSON.stringify(F)); } catch(e) {} }
     if (state.A) { A = state.A; if (!A.dates) A.dates = []; try { localStorage.setItem(ASK, JSON.stringify(A)); } catch(e) {} }
     return true;
   } catch(e) { return false; }
@@ -456,22 +455,14 @@ function DEFAULTS() {
   ];
 }
 
-// ─── Tab switching ───
-function switchTab(tab) {
-  ['projects','tasks'].forEach(t => {
-    document.getElementById('tab-'+t).classList.toggle('active', t===tab);
-    document.getElementById('pane-'+t).classList.toggle('active', t===tab);
-  });
-}
-
 // ─── Today focus ───
 const FDSK = 'cc_focus_v1';
-let F = { date: '', picks: [] };
+let F = { picks: [] };
 try {
   const raw = localStorage.getItem(FDSK);
   if (raw) F = JSON.parse(raw);
-  if (F.date !== todayStr()) F = { date: todayStr(), picks: [] };
-} catch(e) { F = { date: todayStr(), picks: [] }; }
+  if (!F.picks) F.picks = [];
+} catch(e) { F = { picks: [] }; }
 
 // ─── Activity streak ───
 const ASK = 'cc_activity_v1';
@@ -710,9 +701,7 @@ function renderProjects() {
   document.getElementById('s-count').textContent = P.exams.length;
   if (nextExam) {
     document.getElementById('s-next').textContent = nextExam.name+' · '+fmtDate(nextExam.date);
-    const nd = daysTo(nextExam.date);
-    document.getElementById('next-up').textContent = nd<=7 ? `${nextExam.name} in ${nd} day${nd===1?'':'s'} — start today.` : `Next up: ${nextExam.name} in ${nd} days.`;
-  } else { document.getElementById('next-up').textContent=''; document.getElementById('s-next').textContent=''; }
+  } else { document.getElementById('s-next').textContent=''; }
 }
 
 function doSave(examId, idx) {
@@ -871,10 +860,21 @@ function tItemHtml(t, today) {
   </div>`;
 }
 
+// ─── Weekly done-task purge ───
+function maybeCleanDone() {
+  const WEEK_MS = 7 * 86400000;
+  if (!T.lastClearedDone || Date.now() - T.lastClearedDone > WEEK_MS) {
+    T.items = T.items.filter(t => !t.done);
+    T.lastClearedDone = Date.now();
+    tPersist();
+  }
+}
+
 // ─── Init ───
 (async () => {
   setSyncDot('syncing');
   await loadFromCloud();
+  maybeCleanDone();
   renderToday();
   renderProjects();
   renderTasks();
