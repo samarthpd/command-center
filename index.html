@@ -502,6 +502,11 @@ function removePick(type, id) {
 function todayCheckTask(id) { tToggleDone(id); renderToday(); }
 
 function renderToday() {
+  // Prune picks for tasks that no longer exist
+  const before = F.picks.length;
+  F.picks = F.picks.filter(p => p.type !== 'task' || T.items.some(t => String(t.id) === String(p.id)));
+  if (F.picks.length !== before) fPersist();
+
   const el = document.getElementById('today-picks');
   // Activity row (always first)
   const done = actDoneToday(), streak = getStreak();
@@ -546,7 +551,10 @@ document.getElementById('today-picks').addEventListener('click', e => {
   if (cb) {
     if (cb.dataset.activity) { toggleActivity(); return; }
     const id = parseInt(cb.dataset.taskId);
-    tToggleDone(id); renderToday();
+    tToggleDone(id);
+    const t = T.items.find(x => x.id === id);
+    if (t && t.done) removePick('task', id); // removes from Today + re-renders
+    else renderToday();
   }
 });
 
@@ -785,7 +793,14 @@ document.getElementById('t-new-text').addEventListener('keydown', e=>{ if(e.key=
 function tToggleDone(id) { const t=T.items.find(x=>x.id===id); if(t){t.done=!t.done;tPersist();renderTasks();} }
 function tToggleUrgentItem(id) { const t=T.items.find(x=>x.id===id); if(t){t.urgent=!t.urgent;tPersist();renderTasks();} }
 function tSetDate(id,val) { const t=T.items.find(x=>x.id===id); if(t){t.surfaceDate=val||null;tPersist();renderTasks();} }
-function tRemove(id) { T.items=T.items.filter(x=>x.id!==id); tPersist();renderTasks(); }
+function tRemove(id) {
+  T.items = T.items.filter(x => x.id !== id);
+  const before = F.picks.length;
+  F.picks = F.picks.filter(p => !(p.type==='task' && String(p.id)===String(id)));
+  tPersist();
+  if (F.picks.length !== before) fPersist();
+  renderTasks(); renderToday();
+}
 
 function renderTasks() {
   const today=todayStr();
