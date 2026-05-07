@@ -150,6 +150,14 @@
   .m-text:not(.done) { cursor: pointer; }
   .m-text:not(.done):hover { color: var(--blue); }
   .m-text.done { color: var(--muted); text-decoration: line-through; text-decoration-color: var(--faint); }
+  .m-due-pill { display: inline-block; font-family: var(--mono); font-size: 10px; padding: 1px 6px; border-radius: 10px; margin-top: 3px; }
+  .m-due-ok    { background: var(--faint); color: var(--muted); }
+  .m-due-amber { background: var(--amber-bg); color: var(--amber); }
+  .m-due-red   { background: var(--red-bg); color: var(--red); }
+  .btn-pin-ms { background: none; border: none; font-size: 13px; cursor: pointer; padding: 1px 4px; border-radius: 4px; opacity: 0; transition: opacity 0.15s, filter 0.12s; line-height: 1; filter: grayscale(1) opacity(0.4); }
+  .ms-row:hover .btn-pin-ms { opacity: 1; }
+  .btn-pin-ms.pinned { opacity: 1; filter: none; }
+  .btn-pin-ms:hover { filter: none; opacity: 1; }
   .m-actions { opacity: 0; display: flex; gap: 4px; transition: opacity 0.15s; }
   .act { background: none; border: 0.5px solid var(--border2); border-radius: 5px; padding: 2px 8px; font-family: var(--mono); font-size: 10px; color: var(--muted); cursor: pointer; transition: all 0.12s; }
   .act:hover { color: var(--text); background: var(--faint); }
@@ -158,6 +166,8 @@
   .edit-row { display: flex; align-items: center; gap: 8px; padding: 0.5rem 1.5rem; background: #eef3fa; border-bottom: 0.5px solid var(--border); flex-wrap: wrap; }
   .edit-row input[type="text"] { flex: 1; min-width: 120px; background: #fff; border: 0.5px solid #a8c4e8; border-radius: 6px; padding: 5px 9px; font-family: var(--sans); font-size: 13px; color: var(--text); outline: none; }
   .edit-row input[type="text"]:focus { border-color: var(--blue); box-shadow: 0 0 0 2px rgba(26,95,168,0.12); }
+  .edit-row input[type="date"] { background: #fff; border: 0.5px solid #a8c4e8; border-radius: 6px; padding: 5px 8px; font-family: var(--mono); font-size: 11px; color: var(--muted); outline: none; }
+  .edit-row input[type="date"]:focus { border-color: var(--blue); }
   .btn-save { background: var(--blue); border: none; border-radius: 6px; padding: 5px 14px; font-family: var(--mono); font-size: 10px; color: #fff; cursor: pointer; }
   .btn-save:hover { opacity: 0.85; }
   .btn-cancel { background: none; border: 0.5px solid var(--border2); border-radius: 6px; padding: 5px 10px; font-family: var(--mono); font-size: 10px; color: var(--muted); cursor: pointer; }
@@ -369,6 +379,10 @@ try {
   if (!P.exams) P.exams = JSON.parse(JSON.stringify(DEFAULTS()));
   if (!P.checked) P.checked = {};
 } catch(e) { P = { exams: JSON.parse(JSON.stringify(DEFAULTS())), checked: {} }; }
+function backfillMilestoneIds() {
+  P.exams.forEach(exam => exam.milestones.forEach((m, i) => { if (!m.id) m.id = exam.id + '_m' + i + '_' + Math.random().toString(36).slice(2,6); }));
+}
+backfillMilestoneIds();
 
 const TSK = 'cc_tasks_v1';
 let T = { items: [], nextId: 1 };
@@ -418,7 +432,7 @@ async function loadFromCloud() {
     const items = await res.json();
     const state = Array.isArray(items) && items.find(x => x && x.__cc_state);
     if (!state) { await pushState(); return false; } // cloud empty — push local state up
-    if (state.P) { P = state.P; if (!P.exams) P.exams = JSON.parse(JSON.stringify(DEFAULTS())); if (!P.checked) P.checked = {}; try { localStorage.setItem(PSK, JSON.stringify(P)); } catch(e) {} }
+    if (state.P) { P = state.P; if (!P.exams) P.exams = JSON.parse(JSON.stringify(DEFAULTS())); if (!P.checked) P.checked = {}; backfillMilestoneIds(); try { localStorage.setItem(PSK, JSON.stringify(P)); } catch(e) {} }
     if (state.T) { T = state.T; if (!T.items) T.items = []; if (!T.nextId) T.nextId = 1; try { localStorage.setItem(TSK, JSON.stringify(T)); } catch(e) {} }
     if (state.F) { F = state.F; if (!F.picks) F.picks = []; try { localStorage.setItem(FDSK, JSON.stringify(F)); } catch(e) {} }
     if (state.A) { A = state.A; if (!A.dates) A.dates = []; try { localStorage.setItem(ASK, JSON.stringify(A)); } catch(e) {} }
@@ -490,6 +504,16 @@ function toggleTodayProject(id, name, color) {
   fPersist(); renderToday(); renderProjects(); renderTasks();
 }
 
+function toggleTodayMilestone(m, examName, examColor) {
+  const id = m.id;
+  if (isInToday('milestone', id)) {
+    F.picks = F.picks.filter(p => !(p.type==='milestone' && p.id===id));
+  } else if (F.picks.length < 5) {
+    F.picks.push({ type:'milestone', id, name: m.label, projectName: examName, color: examColor });
+  }
+  fPersist(); renderToday(); renderProjects();
+}
+
 function toggleTodayTask(id) {
   const task = T.items.find(t => t.id === id);
   if (!task) return;
@@ -511,9 +535,13 @@ function removePick(type, id) {
 function todayCheckTask(id) { tToggleDone(id); renderToday(); }
 
 function renderToday() {
-  // Prune picks for tasks that no longer exist
+  // Prune picks for items that no longer exist
   const before = F.picks.length;
-  F.picks = F.picks.filter(p => p.type !== 'task' || T.items.some(t => String(t.id) === String(p.id)));
+  F.picks = F.picks.filter(p => {
+    if (p.type === 'task') return T.items.some(t => String(t.id) === String(p.id));
+    if (p.type === 'milestone') return P.exams.some(e => e.milestones.some(m => m.id === p.id));
+    return true; // projects
+  });
   if (F.picks.length !== before) fPersist();
 
   const el = document.getElementById('today-picks');
@@ -531,14 +559,22 @@ function renderToday() {
     html += `<div class="today-divider"></div>`;
     const colorMap = { red:'var(--red)', amber:'var(--amber)', blue:'var(--blue)', green:'var(--green)', purple:'var(--purple)' };
     html += F.picks.map(p => {
+      const dot = colorMap[p.color] || 'var(--muted)';
+      if (p.type === 'milestone') {
+        return `<div class="today-pick" data-type="${p.type}" data-id="${String(p.id)}">
+          <div class="today-pick-dot" style="background:${dot}"></div>
+          <div class="today-pick-name">${p.projectName} → ${p.name}</div>
+          <button class="today-sun" title="Remove from today">☀</button>
+        </div>`;
+      }
       const task = p.type==='task' ? T.items.find(t => String(t.id)===String(p.id)) : null;
       const isDone = task && task.done;
-      const dot = p.type==='project' ? (colorMap[p.color]||'var(--blue)') : 'var(--muted)';
+      const taskDot = p.type==='project' ? dot : 'var(--muted)';
       const cb = p.type==='task'
         ? `<div class="today-cb${isDone?' done':''}" data-task-id="${p.id}" title="Mark done"></div>`
         : '';
       return `<div class="today-pick" data-type="${p.type}" data-id="${String(p.id)}">
-        <div class="today-pick-dot" style="background:${dot}"></div>
+        <div class="today-pick-dot" style="background:${taskDot}"></div>
         <div class="today-pick-name${isDone?' is-done':''}">${p.name}</div>
         ${cb}
         <button class="today-sun" title="Remove from today">☀</button>
@@ -666,7 +702,7 @@ function renderProjects() {
       if (isEd) {
         const er = document.createElement('div');
         er.className = 'edit-row';
-        er.innerHTML = `<input type="text" id="ei-label" value="${m.label.replace(/"/g,'&quot;')}" /><button class="btn-save" id="ei-save">Save</button><button class="btn-cancel" id="ei-cancel">Cancel</button>`;
+        er.innerHTML = `<input type="text" id="ei-label" value="${m.label.replace(/"/g,'&quot;')}" /><input type="date" id="ei-due" value="${m.due||''}" title="Optional deadline" /><button class="btn-save" id="ei-save">Save</button><button class="btn-cancel" id="ei-cancel">Cancel</button>`;
         msDiv.appendChild(er);
         setTimeout(()=>{ const el=er.querySelector('#ei-label'); if(el){el.focus();el.select();} },20);
         er.querySelector('#ei-save').onclick = () => doSave(exam.id, i);
@@ -675,11 +711,17 @@ function renderProjects() {
       } else {
         const row = document.createElement('div');
         row.className = 'ms-row';
+        const d = m.due ? daysTo(m.due) : null;
+        const duePillCls = d === null ? '' : d <= 3 ? 'm-due-red' : d <= 7 ? 'm-due-amber' : 'm-due-ok';
+        const duePill = (m.due && !done) ? `<div class="m-due-pill ${duePillCls}">${ctText(d)}</div>` : '';
+        const pinned = isInToday('milestone', m.id);
         row.innerHTML = `<div class="cb cb-${exam.color} ${done?'done':''}" title="Toggle complete"><div class="ck"></div></div>
-          <div class="m-body"><div class="m-text ${done?'done':''}">${m.label}</div></div>
+          <div class="m-body"><div class="m-text ${done?'done':''}">${m.label}</div>${duePill}</div>
+          <button class="btn-pin-ms${pinned?' pinned':''}" title="Add to today">☀</button>
           <div class="m-actions"><button class="act del">delete</button></div>`;
         row.querySelector('.cb').onclick = e => { e.stopPropagation(); P.checked[key]=!P.checked[key]; pPersist(); renderProjects(); };
         if (!done) row.querySelector('.m-text').onclick = e => { e.stopPropagation(); pEditing={examId:exam.id,idx:i}; renderProjects(); };
+        row.querySelector('.btn-pin-ms').onclick = e => { e.stopPropagation(); toggleTodayMilestone(m, exam.name, exam.color); };
         row.querySelector('.act.del').onclick = e => { e.stopPropagation(); doDelete(exam.id,i); };
         msDiv.appendChild(row);
       }
@@ -706,8 +748,17 @@ function renderProjects() {
 function doSave(examId, idx) {
   const label=(document.getElementById('ei-label').value||'').trim();
   if(!label) return;
+  const due=document.getElementById('ei-due').value||null;
   const exam=P.exams.find(e=>e.id===examId);
-  if(exam){exam.milestones[idx]={label};pPersist();}
+  if(exam){
+    const m=exam.milestones[idx];
+    const prevId=m.id; // preserve stable id
+    exam.milestones[idx]={id:prevId,label,due};
+    // Update Today pick name if pinned
+    const pick=F.picks.find(p=>p.type==='milestone'&&p.id===prevId);
+    if(pick){pick.name=label;fPersist();}
+    pPersist();
+  }
   pEditing=null; renderProjects();
 }
 function doDelete(examId, idx) {
@@ -726,7 +777,7 @@ function doAdd(examId) {
   const lEl=document.getElementById('ai-label-'+examId);
   const label=(lEl.value||'').trim(); if(!label){lEl.focus();return;}
   const exam=P.exams.find(e=>e.id===examId);
-  if(exam){exam.milestones.push({label});pPersist();renderProjects();}
+  if(exam){exam.milestones.push({id:'ms_'+Date.now()+'_'+Math.random().toString(36).slice(2,5),label});pPersist();renderProjects();}
 }
 function doSaveProject(id) {
   const name = (document.getElementById('pe-name').value||'').trim();
