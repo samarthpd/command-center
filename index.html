@@ -597,14 +597,21 @@ function todayCheckMilestone(milestoneId) {
 }
 
 function renderToday() {
-  // Prune picks for items that no longer exist
+  // Prune picks for items that no longer exist, and auto-move done tasks to cleared
   const before = F.picks.length;
+  let autoMoved = false;
+  if (!F.cleared) F.cleared = [];
   F.picks = F.picks.filter(p => {
-    if (p.type === 'task') return T.items.some(t => String(t.id) === String(p.id));
+    if (p.type === 'task') {
+      const task = T.items.find(t => String(t.id) === String(p.id));
+      if (!task) return false; // deleted task — remove
+      if (task.done) { F.cleared.push(p); autoMoved = true; return false; } // done but not cleared yet — auto-move
+      return true;
+    }
     if (p.type === 'milestone') return P.exams.some(e => e.milestones.some(m => m.id === p.id));
     return true;
   });
-  if (F.picks.length !== before) fPersist();
+  if (F.picks.length !== before || autoMoved) fPersist();
 
   const el = document.getElementById('today-picks');
   const colorMap = { red:'var(--red)', amber:'var(--amber)', blue:'var(--blue)', green:'var(--green)', purple:'var(--purple)' };
@@ -684,7 +691,7 @@ document.getElementById('today-picks').addEventListener('click', e => {
     if (cb.dataset.activity) { toggleActivity(); return; }
     if (cb.dataset.milestoneId) { todayCheckMilestone(cb.dataset.milestoneId); return; }
     const id = parseInt(cb.dataset.taskId);
-    tToggleDone(id); // handles move-to-cleared + renderToday internally
+    tMarkDoneFromToday(id); // always marks done + moves to cleared (never toggles)
   }
 });
 
@@ -951,6 +958,21 @@ function tToggleDone(id) {
   } else {
     const ci = F.cleared.findIndex(p => p.type==='task' && String(p.id)===String(id));
     if (ci >= 0) { F.cleared.splice(ci, 1); fPersist(); }
+  }
+  renderTasks();
+  renderToday();
+}
+// Called from Today panel — always marks done, never un-does
+function tMarkDoneFromToday(id) {
+  const t = T.items.find(x => String(x.id) === String(id));
+  if (t && !t.done) { t.done = true; tPersist(); }
+  // Always move from picks → cleared regardless of prior done state
+  const idx = F.picks.findIndex(p => p.type==='task' && String(p.id)===String(id));
+  if (idx >= 0) {
+    const [pick] = F.picks.splice(idx, 1);
+    if (!F.cleared) F.cleared = [];
+    F.cleared.push(pick);
+    fPersist();
   }
   renderTasks();
   renderToday();
